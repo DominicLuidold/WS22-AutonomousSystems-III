@@ -15,12 +15,12 @@ class DriveUntilToken:
         # Publish
         self._cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         self._rate = rospy.Rate(10)
+        self._cmd_sub = rospy.Subscriber('/my_pixy/block_data', PixyData, self.process)
 
-        # Start
-        self.process()
 
-    def process(self):
-        (linear, angular, changeBehavior) = self._behaviors[self._currBehavior].process()
+
+    def process(self, data):
+        (linear, angular, changeBehavior) = self._behaviors[self._currBehavior].process(data)
         rospy.loginfo(self._behaviors[self._currBehavior])
         
         twist = Twist()
@@ -36,28 +36,31 @@ class DriveAndSearch:
         rospy.loginfo("Drive and Search")
 
         # Subscribe
-        self._cmd_sub = rospy.Subscriber('/my_pixy/block_data', PixyData)
 
-    def process(self):
-        if self.found_tag():
-            return (0.2, 0, 1)
+    def process(self, data):
+        if self.found_tag(data):
+            rospy.loginfo("stop")
+            return (0, 0, 1)
         else:
-            return (0, 0.2, 0)
+            rospy.loginfo("run")
+            return (0.02, 0, 0)
 
-    def found_tag(self) -> bool:
-        rospy.loginfo(self._cmd_sub)
-
-        return False
+    def found_tag(self, data) -> bool:
+        rospy.loginfo("This: " + str(data))
+        if data.header.stamp.secs == 0:
+            return False
+        else:
+            return True
 
 class FoundTag:
     def __init__(self):
         pass
 
-    def process(self):
+    def process(self, data):
         rospy.loginfo("found tag")
         rospy.loginfo("loud noise")
 
-        return (1, 1, 0)
+        return (0, 0.2, 0)
 
 def main():
     # Init
