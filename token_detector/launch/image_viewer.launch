@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="token_detector" type="image_viewer.py" name="image_viewer" output="screen"></node>
+</launch>
