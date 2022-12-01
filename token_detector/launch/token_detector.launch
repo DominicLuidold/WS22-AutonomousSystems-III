@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="token_detector" type="token_detector.py" name="token_detector" output="screen"></node>
+</launch>

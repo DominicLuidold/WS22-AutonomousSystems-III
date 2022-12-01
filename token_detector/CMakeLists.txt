@@ -166,6 +166,7 @@ include_directories(
 # )
 catkin_install_python(PROGRAMS
   src/image_viewer.py
+  src/token_detector.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
