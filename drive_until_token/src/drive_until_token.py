@@ -13,7 +13,7 @@ class DriveUntilToken:
         self._currBehavior = 0
 
         # Publish
-        self._cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self._cmd_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=0)
         self._rate = rospy.Rate(10)
         self._cmd_sub = rospy.Subscriber('/my_pixy/block_data', PixyData, self.process)
 
