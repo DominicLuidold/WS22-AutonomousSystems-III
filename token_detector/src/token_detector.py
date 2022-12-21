@@ -7,6 +7,7 @@ import sys
 import rospy
 import cv2 as cv
 import numpy as np
+import math
 from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -15,15 +16,20 @@ class token_detector:
     self.bridge = CvBridge()
     self.image_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage,self.detect_token)
     self.tokens = []
+    #self.raspicam_base = np.array([640, 960])
 
   def detect_token(self,data):
     try:
       cv_image_bgr = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+      self.raspicam_base = np.array([cv_image_bgr.shape[1]//2, cv_image_bgr.shape[0]])
       mask = self.get_token_mask(cv_image_bgr)
       mask = self.remove_noise(mask)
       contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
       if contours:
-        self.tokens = self.calculate_centers(contours)
+        self.tokens = self.calculate_token_centers(contours)
+        sorted_tokens_closest = self.sort_tokens_by_distance()
+        angle = self.calculate_angle_of_closest(sorted_tokens_closest)
+
         #self.print_contours(mask, contours)
       else:
         self.tokens = []
@@ -52,8 +58,29 @@ class token_detector:
     closed = cv.morphologyEx(opened, cv.MORPH_CLOSE, kernel)
     return closed
 
-  def calculate_centers(self, contours):
-    return [cv.convexHull(contour).mean(axis=0, dtype=np.int32)[0] for contour in contours]
+  def calculate_token_centers(self, contours):
+    """
+    TODO improve accuracy
+    """
+    return np.array([cv.convexHull(contour).mean(axis=0, dtype=np.int32)[0] for contour in contours])
+
+  def sort_tokens_by_distance(self):
+    """
+    sort only by difference on y-axis as image is distorted
+    """
+    #distances = [np.linalg.norm(self.raspicam_base - token) for token in self.tokens]
+    distances = [self.raspicam_base[1] - token[1] for token in self.tokens]
+    indexes = np.argsort(distances)
+    return self.tokens[indexes]
+
+
+  def calculate_angle_of_closest(self, tokens):
+    """
+    Calculate the angle in radians along the y-axis! -> Directly in front = 0, slightly to the right is -0.x, left = +0.x
+    """
+    closest_token = tokens[0]
+    angle = math.atan2(self.raspicam_base[0] - closest_token[0], self.raspicam_base[1] - closest_token[1])
+    return angle
 
   def print_contours(self, mask, contours):
     if contours:
