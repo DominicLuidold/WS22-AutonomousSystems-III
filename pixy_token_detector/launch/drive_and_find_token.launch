@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="pixy_token_detector" type="drive_forward.py" name="drive_forward" output="screen" />
+    <node pkg="pixy_token_detector" type="pixy_token_detector.py" name="pixy_token_detector" output="screen" />
+    <!--<include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch" /> -->
+</launch>
