@@ -1,0 +1,7 @@
+<launch>
+    <!-- Start LIDAR -->
+    <!-- <include file="$(find turtlebot3_bringup)/launch/turtlebot3_lidar.launch"/> -->
+
+    <!-- Start wall following -->
+    <node pkg="wall_follower" type="follow_wall.py" name="follow_wall" respawn="true" output="screen" />
+</launch>
