@@ -1,6 +1,11 @@
 <launch>
-    <!-- Start LIDAR -->
-    <!-- <include file="$(find turtlebot3_bringup)/launch/turtlebot3_lidar.launch"/> -->
+    <!-- Optional arguments -->
+    <arg name="debug" default="false" doc="show debug messages if `true`" />
+    <arg name="lidar_data" default="false" doc="show lidar data if `true` AND `debug:=true`" />
+
+    <!-- Parameters -->
+    <param name="debug" type="bool" value="$(arg debug)" />
+    <param name="lidar_data" type="bool" value="$(arg lidar_data)" />
 
     <!-- Start wall following -->
     <node pkg="wall_follower" type="follow_wall.py" name="follow_wall" respawn="true" output="screen" />
