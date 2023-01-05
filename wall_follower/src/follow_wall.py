@@ -37,7 +37,7 @@ class WallFollowerTwo:
 
         # Start wall-following
         while not rospy.is_shutdown():
-            self.step()
+            self.move()
             pass 
 
     def updateLaserData(self, msg) -> None:
@@ -52,28 +52,7 @@ class WallFollowerTwo:
         if DEBUG and SHOW_LIDAR_DATA:
             rospy.logdebug(self._laser_data)
 
-    def step(self) -> None:
-        self.sensePlan()
-
-        if self.state == 0:
-            rospy.logdebug("Searching for wall..")
-            twist = self.findWall()
-        elif self.state == 1:
-            rospy.logdebug("Turning left..")
-            twist = self.turnLeft()
-        elif self.state == 2:
-            rospy.logdebug("Following wall..")
-            twist = self.followWall()
-        elif self.state == 3:
-            rospy.logdebug("Turning right..")
-            twist = self.turnRight()
-        else:
-            rospy.logwarn('Unknown state!')
-
-        self._cmd_vel_pub.publish(twist)
-        self._rate.sleep()
-
-    def sensePlan(self) -> int:
+    def move(self) -> int:
         fl = self._laser_data['fl']
         l = self._laser_data['l']
         f = self._laser_data['f']
@@ -81,38 +60,42 @@ class WallFollowerTwo:
         r = self._laser_data['r']
 
         if f < SAFE_STOP_DISTANCE:
-            rospy.logdebug("Wall in front - turn left!")
-            self.state = 1
+            rospy.logdebug("Wall in front")
+            twist = self.turnLeft()
         elif r < SAFE_STOP_DISTANCE:
-            rospy.logdebug("Wall to the right - follow wall!")
-            self.state = 2
+            rospy.logdebug("Wall to the right")
+            twist = self.followWall()
         elif f > SAFE_STOP_DISTANCE and fr > SAFE_STOP_DISTANCE and r > SAFE_STOP_DISTANCE:
-            rospy.logdebug("No wall found!")
-            self.state = 0
+            rospy.logdebug("No wall found")
+            twist = self.findWall()
         else:
-           rospy.logerr("Roboter is in unkown state!")
+           rospy.logwarn("Robot is in unkown state!")
+           twist = Twist()
+        
+        self._cmd_vel_pub.publish(twist)
+        self._rate.sleep()
 
     def findWall(self) -> Twist:
+        rospy.loginfo("Finding wall..")
         twist = Twist()
         twist.linear.x = 0.2
         twist.angular.z = 0
+
         return twist
 
     def turnLeft(self) -> Twist:
+        rospy.loginfo("Turning left..")
         twist = Twist()
-        twist.linear.x = 0
-        twist.angular.z = 0.2
-        return twist
+        twist.angular.z = 0.4
 
-    def turnRight(self) -> Twist:
-        twist = Twist()
-        twist.angular.z = -0.2
         return twist
 
     def followWall(self) -> Twist:
+        rospy.loginfo("Following wall..")
         twist = Twist()
-        twist.linear.x = 0.2
+        twist.linear.x = 0.15
         twist.angular.z = -0.2
+
         return twist
 
 def main() -> None:
