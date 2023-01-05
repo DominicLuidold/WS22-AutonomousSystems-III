@@ -159,7 +159,7 @@ class TokenDetector:
         hulls.append(hull)
       img = cv.drawContours(img, hulls, -1, (0,255,0), 3)
       cv.imshow('m', img)
-      cv.waitKey(0)
+      cv.waitKey(3)
 
 
 
@@ -189,7 +189,7 @@ class MoveTowardsToken:
 
   def execute(self, killerrobot, tokens):
     clst_tkn = tokens[0]
-    linear_velocity = 0.26 * clst_tkn[2]
+    linear_velocity = 0.5 * clst_tkn[2] + 0.05
     angular_velocity = clst_tkn[3] * 0.3
     killerrobot.move(linear_velocity, angular_velocity)
     """
