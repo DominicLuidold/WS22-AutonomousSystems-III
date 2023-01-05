@@ -16,7 +16,8 @@ The node is started with the following command and the parameters defined below 
 roslaunch wall_follower follow_wall.launch
 ```
 
-| Parameter    | Default | Format | Required | Description                                                           |
-|--------------|---------|--------|----------|-----------------------------------------------------------------------|
-| `debug`      | `false` | `bool` | No       | Shows debug messages                                                  |
-| `lidar_data` | `false` | `bool` | No       | Shows lidar data in the console, requires `debug` to be set to `true` |
+| Parameter    | Default | Format   | Required | Description                                                          |
+|--------------|---------|----------|----------|----------------------------------------------------------------------|
+| `debug`      | `false` | `bool`   | No       | Show debug messages                                                  |
+| `lidar_data` | `false` | `bool`   | No       | Show lidar data in the console, requires `debug` to be set to `true` |
+| `sleep_rate` | 5       | `double` | No       | Adjust Hertz rate of published messages                              |

@@ -7,9 +7,10 @@ from sensor_msgs.msg import LaserScan
 # Launch arguments
 DEBUG = rospy.get_param('debug')
 SHOW_LIDAR_DATA = rospy.get_param('lidar_data')
+HERTZ_RATE = rospy.get_param('hertz_rate')
 
 # Lidar config
-STOP_DISTANCE = 0.2
+STOP_DISTANCE = 0.25
 LIDAR_ERROR = 0.05
 SAFE_STOP_DISTANCE = STOP_DISTANCE + LIDAR_ERROR
 
@@ -17,7 +18,7 @@ class WallFollowerTwo:
     def __init__(self):
         # Init
         rospy.loginfo('WallFollower initialized!')
-        self._rate = rospy.Rate(5) # A rate higher than 5 Hz is not working properly/too fast
+        self._rate = rospy.Rate(HERTZ_RATE) # A rate higher than 5 Hz is not working properly/too fast
 
         # Subscribed topics
         self._laser_sub = rospy.Subscriber('/scan', LaserScan, self.updateLaserData)
@@ -43,7 +44,7 @@ class WallFollowerTwo:
         self._laser_data = {
             'fl': min(min(msg.ranges[30:60]), 10),
             'l': min(min(msg.ranges[61:120]), 10),
-            'f': min(min(msg.ranges[330:359]), min(msg.ranges[0:30]), 10),
+            'f': min(min(msg.ranges[330:359]), 10),
             'r': min(min(msg.ranges[260:299]), 10),
             'fr': min(min(msg.ranges[300:329]), 10)
         }
@@ -80,16 +81,16 @@ class WallFollowerTwo:
         r = self._laser_data['r']
 
         if f < SAFE_STOP_DISTANCE:
-            # Wall in front - turn left
+            rospy.logdebug("Wall in front - turn left!")
             self.state = 1
         elif r < SAFE_STOP_DISTANCE:
-            # Wall to the right - follow wall
+            rospy.logdebug("Wall to the right - follow wall!")
             self.state = 2
         elif f > SAFE_STOP_DISTANCE and fr > SAFE_STOP_DISTANCE and r > SAFE_STOP_DISTANCE:
-            # No wall found
+            rospy.logdebug("No wall found!")
             self.state = 0
         else:
-           rospy.logerr("Roboter is in unkown state")
+           rospy.logerr("Roboter is in unkown state!")
 
     def findWall(self) -> Twist:
         twist = Twist()
