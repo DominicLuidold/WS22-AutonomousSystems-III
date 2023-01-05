@@ -13,11 +13,13 @@ from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Twist
 
 class Turtle:
+
   def __init__(self):
     rospy.init_node('token_detector', anonymous=True)
     self.__pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     self.__behaviors = [TargetReached(), MoveTowardsToken()]
     self.__token_detector = TokenDetector()
+
 
   def keep_movin(self):
     while not rospy.is_shutdown():
@@ -39,11 +41,14 @@ class Turtle:
     self.__pub.publish(move)
 
 
+
 class TokenDetector:
+
   def __init__(self):
     self.__bridge = CvBridge()
-    self.__image_sub = rospy.Subscriber("/raspicam_node/image/compressed",CompressedImage,self.detect_token)
+    self.__image_sub = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, self.detect_token)
     self.tokens = [] # [x,y,y-distance[%],angle[rad]]
+
 
   def detect_token(self,data):
     try:
@@ -53,15 +58,14 @@ class TokenDetector:
       mask = self.remove_noise(mask)
       contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
       if contours:
-        self.tokens = self.calculate_token_centers(contours)
-        self.sort_tokens_by_distance()
-        self.set_angle_of_tokens()
+        self.tokens = self.calculate_all_token_centers(contours)
         #self.print_contours(mask, contours)
       else:
         self.tokens = []
     except CvBridgeError as e:
       print(e)
   
+
   def get_token_mask(self, bgr_image):
     """
     Build a mask that shows where tokens are (white=token)
@@ -77,6 +81,7 @@ class TokenDetector:
     mask = cv.bitwise_or(mask1, mask2, mask)
     return mask
 
+
   def remove_noise(self, mask):
     kernel = cv.getStructuringElement(cv.MORPH_RECT,(5,5))
     opened = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
@@ -84,29 +89,47 @@ class TokenDetector:
     return closed
 
 
-  def calculate_token_centers(self, contours):
+  def calculate_all_token_centers(self, contours):
     """
     TODO improve accuracy by either just using left/rightmost bzw hightst/lowest points middle of contour or approximating down to 4 points like in ba2
     """
-    return np.array([np.append(np.array(cv.convexHull(contour).mean(axis=0, dtype=np.int32)[0]), np.zeros(2), axis=0) for contour in contours])
+    tokens = np.empty((0, 4), float)
+    for contour in contours:
+      center = self.calculate_token_center(cv.convexHull(contour))
+      tokens = np.append(tokens, np.array([center]), axis=0)
+    tokens = self.sort_tokens_by_distance(tokens)
+    tokens = self.set_angle_of_tokens(tokens)
+    return tokens
 
 
-  def sort_tokens_by_distance(self):
+  def calculate_token_center(self, hull):
+    min_x, min_y, max_x, max_y = 10_000, 10_000, 0, 0
+    for point in hull:
+      min_x = min(min_x, point[0][0])
+      min_y = min(min_y, point[0][1])
+      max_x = max(max_x, point[0][0])
+      max_y = max(max_y, point[0][1])
+    return np.array([min_x + (max_x - min_x)//2, min_y + (max_y - min_y)//2, 0, 0])
+
+
+  def sort_tokens_by_distance(self, tokens):
     """
     sort only by difference on y-axis as image is distorted
     """
-    distances = [self.raspicam_base[1] - token[1] for token in self.tokens]
-    for i in range(len(self.tokens)):
-      self.tokens[i][2] = distances[i] / self.raspicam_base[1]
+    distances = [self.raspicam_base[1] - token[1] for token in tokens]
+    for i in range(len(tokens)):
+      tokens[i][2] = distances[i] / self.raspicam_base[1]
     indexes = np.argsort(distances)
-    self.tokens = self.tokens[indexes]
+    return tokens[indexes]
 
-  def set_angle_of_tokens(self):
+
+  def set_angle_of_tokens(self, tokens):
     """
     Calculate the angle in radians along the y-axis! -> Directly in front = 0, slightly to the right is -0.x, left = +0.x
     """
-    for token in self.tokens:
+    for token in tokens:
       token[3] = math.atan2(self.raspicam_base[0] - token[0], self.raspicam_base[1] - token[1]) # atan2(phi) = gk/ak = x-x/y-y
+    return tokens
 
 
   def print_contours(self, mask, contours):
@@ -115,8 +138,8 @@ class TokenDetector:
       hulls = []
       for contour in contours:
         hull = cv.convexHull(contour)
-        center = hull.mean(axis=0, dtype=np.int32)[0]
-        cv.circle(img, center, 10, (0,0,255), -1)
+        center = self.calculate_token_center(hull)
+        cv.circle(img, (center[0], center[1]), 10, (0,0,255), -1)
         hulls.append(hull)
       img = cv.drawContours(img, hulls, -1, (0,255,0), 3)
       cv.imshow('m', img)
