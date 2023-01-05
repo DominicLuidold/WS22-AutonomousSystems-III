@@ -21,18 +21,20 @@ class WallFollowerTwo:
         self._rate = rospy.Rate(HERTZ_RATE) # A rate higher than 5 Hz is not working properly/too fast
 
         # Subscribed topics
-        self._laser_sub = rospy.Subscriber('/scan', LaserScan, self.updateLaserData)
+        self._laser_sub = rospy.Subscriber('/scan', LaserScan, self.update_laser_data)
 
         # Published topics
         self._cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
 
         # Initialize laser data until real data is read
         self._laser_data = {
-            'fl': 0,
-            'l': 0,
-            'f': 0,
-            'r': 0,
-            'fr': 0
+            'back_left': 0,
+            'left': 0,
+            'front_left': 0,
+            'front': 0,
+            'front_right': 0,
+            'right': 0,
+            'back_right': 0
         }
 
         # Start wall-following
@@ -40,38 +42,37 @@ class WallFollowerTwo:
             self.move()
             pass 
 
-    def updateLaserData(self, msg) -> None:
+    def update_laser_data(self, msg: LaserScan) -> None:
         self._laser_data = {
-            'fl': min(min(msg.ranges[30:60]), 10),
-            'l': min(min(msg.ranges[61:120]), 10),
-            'f': min(min(msg.ranges[330:359]), 10),
-            'r': min(min(msg.ranges[260:299]), 10),
-            'fr': min(min(msg.ranges[300:329]), 10)
+            'back_left':  min(msg.ranges[120:149]),
+            'left':  min(msg.ranges[75:104]),
+            'front_left': min(msg.ranges[30:59]),
+            'front': min(min(msg.ranges[0:14]), min(msg.ranges[345:359])),
+            'front_right':  min(msg.ranges[300:329]),
+            'right':  min(msg.ranges[255:284]),
+            'back_right':  min(msg.ranges[210:239])
         }
 
         if DEBUG and SHOW_LIDAR_DATA:
             rospy.logdebug(self._laser_data)
 
-    def move(self) -> int:
-        fl = self._laser_data['fl']
-        l = self._laser_data['l']
-        f = self._laser_data['f']
-        fr = self._laser_data['fr']
-        r = self._laser_data['r']
+    def move(self) -> None:
+        back_left = self._laser_data['back_left']
+        left = self._laser_data['left']
+        front_left = self._laser_data['front_left']
+        front = self._laser_data['front']
+        front_right = self._laser_data['front_right']
+        right = self._laser_data['right']
+        back_right = self._laser_data['back_right']
 
-        if f < SAFE_STOP_DISTANCE:
-            rospy.logdebug("Wall in front")
-            twist = self.turnLeft()
-        elif r < SAFE_STOP_DISTANCE:
-            rospy.logdebug("Wall to the right")
-            twist = self.followWall()
-        elif f > SAFE_STOP_DISTANCE and fr > SAFE_STOP_DISTANCE and r > SAFE_STOP_DISTANCE:
-            rospy.logdebug("No wall found")
-            twist = self.findWall()
-        else:
-           rospy.logwarn("Robot is in unkown state!")
-           twist = Twist()
-        
+        # if any left is smallest: turn left
+        # if front is smallest or front is < threshold: turn left
+        # if rigt is smallest: drive straight
+            # if front_right is smaller than back_right: turn left a bit
+            # if back_right is smaller than front_right: turn right a bit
+        # if back_right is smallest: turn right a lot
+
+        twist = Twist()       
         self._cmd_vel_pub.publish(twist)
         self._rate.sleep()
 
