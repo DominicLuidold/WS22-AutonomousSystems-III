@@ -8,7 +8,7 @@ import rospy
 import cv2 as cv
 import numpy as np
 import math
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Twist
 
@@ -47,12 +47,28 @@ class TokenDetector:
   def __init__(self):
     self.__bridge = CvBridge()
     self.__image_sub = rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, self.detect_token)
+    self.__image_sub2 = rospy.Subscriber("/camera/rgb/image_raw", Image, self.detect_simulated_token)
     self.tokens = [] # [x,y,y-distance[%],angle[rad]]
 
 
   def detect_token(self,data):
     try:
       cv_image_bgr = self.__bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+      self.raspicam_base = np.array([cv_image_bgr.shape[1]//2, cv_image_bgr.shape[0]])
+      mask = self.get_token_mask(cv_image_bgr)
+      mask = self.remove_noise(mask)
+      contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+      if contours:
+        self.tokens = self.calculate_all_token_centers(contours)
+        #self.print_contours(mask, contours)
+      else:
+        self.tokens = []
+    except CvBridgeError as e:
+      print(e)
+
+  def detect_simulated_token(self, data):
+    try:
+      cv_image_bgr = self.__bridge.imgmsg_to_cv2(data, "bgr8")
       self.raspicam_base = np.array([cv_image_bgr.shape[1]//2, cv_image_bgr.shape[0]])
       mask = self.get_token_mask(cv_image_bgr)
       mask = self.remove_noise(mask)
@@ -169,11 +185,11 @@ class MoveTowardsToken:
   Target is ahead and in sight
   """
   def isApplicable(self, tokens):
-    return True
+    return len(tokens) > 0
 
   def execute(self, killerrobot, tokens):
     clst_tkn = tokens[0]
-    linear_velocity = 0.26 * clst_tkn[2] / 2
+    linear_velocity = 0.26 * clst_tkn[2]
     angular_velocity = clst_tkn[3] * 0.3
     killerrobot.move(linear_velocity, angular_velocity)
     """
