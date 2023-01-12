@@ -1,11 +1,14 @@
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
 import math
 
 max_speed = 0.13
 min_detection_dist = 0.03
 max_detection_dist = 0.3
+
+MAX_TARGET_DISTANCE = 0.2
 
 def filtered_min(ranges: list, min_value: float) -> float:
   values_greather_range_min = [i for i in ranges if i > min_value]
@@ -13,19 +16,25 @@ def filtered_min(ranges: list, min_value: float) -> float:
       return math.inf
   return min(values_greather_range_min)
 
+#checks if the turtlebot is within the distance of a position
+def isNearStart(x, y, distance):
+    return abs(x) < distance and abs(y) < distance
 
 class WallFollower:
   def __init__(self) -> None:
     rospy.init_node('wall_follower_proportional', anonymous=True)
     rospy.Subscriber('scan', LaserScan, self.process_scan)
+    rospy.Subscriber('odom', Odometry, self.process_odom)
     self._pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    self._behaviors = [TurnTowardsWall(), FollowWall(), FindWall()]
+    self._behaviors = [Finished(), TurnTowardsWall(), FollowWall(), FindWall()]
     self._scan = None
+    self._odom = None
+    self._started = False
 
   def keep_movin(self):
     while not rospy.is_shutdown():
       for b in self._behaviors:
-        if b.isApplicable(self._scan):
+        if b.isApplicable(self._scan, self._odom):
           b.execute(self)
           break
       rospy.Rate(10).sleep()
@@ -33,15 +42,37 @@ class WallFollower:
   def process_scan(self, data):
     self._scan = data
 
+
+  def process_odom(self, data: Odometry):
+    self._odom = data
+    #check only as long as it is initially in the starting area
+    if not self._started:
+      self._started = not isNearStart(data.pose.pose.position.x, data.pose.pose.position.y, MAX_TARGET_DISTANCE + 0.05)
+      #rospy.loginfo("Leaving start area, will return soon")
+
   def publish_move(self, linear, angular):
     move = Twist()
     move.linear.x = linear
     move.angular.z = angular
     self._pub.publish(move)
 
+class Finished:
+  def isApplicable(self, scan: LaserScan, odom: Odometry):
+    #check when odom value is entered and if it has left the starting area
+    if odom is not None and turtle._started:
+        #check if turtlebot has reached its initial starting position
+        #rospy.loginfo("Check: x: " + str(turtle._odom.pose.pose.position.x) + " , y: " + str(turtle._odom.pose.pose.position.y))
+        if isNearStart(odom.pose.pose.position.x, odom.pose.pose.position.y, MAX_TARGET_DISTANCE):
+            return True
+    return False
+
+  def execute(self, turtle: WallFollower):
+      rospy.loginfo("Finished")
+      #rospy.loginfo("Finished: x: " + str(turtle._odom.pose.pose.position.x) + " , y: " + str(turtle._odom.pose.pose.position.y))
+
 
 class TurnTowardsWall:
-  def isApplicable(self, scan: LaserScan):
+  def isApplicable(self, scan: LaserScan, odom: Odometry):
     """
     Applicable as soon as the wall bends away from the turtle (it moved past the corner)
     Stops and turns left.
@@ -73,7 +104,7 @@ class FollowWall:
   Takes into account the sensors in front, left front and on the left hand side
   and calculates the linear and angular velocity.
   """
-  def isApplicable(self, scan: LaserScan):
+  def isApplicable(self, scan: LaserScan, odom: Odometry):
     if scan and any(item < max_detection_dist for item in scan.ranges):
       return True
     return False
@@ -100,11 +131,13 @@ class FindWall:
   """
   Behavior that just moves straight ahead forever and is always applicable
   """
-  def isApplicable(self, scan: LaserScan):
+  def isApplicable(self, scan: LaserScan, odom: Odometry):
     return True
 
   def execute(self, turtle: WallFollower):
     turtle.publish_move(max_speed, 0)
+
+
 
 if __name__ == '__main__':
   try:

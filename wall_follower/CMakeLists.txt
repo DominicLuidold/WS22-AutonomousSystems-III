@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   geometry_msgs
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -163,6 +164,8 @@ include_directories(
 catkin_install_python(PROGRAMS
   src/follow_wall.py
   src/follow_wall_proportional.py
+  src/follow_wall_proportional_once.py
+  src/follow_wall_by_degree.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
