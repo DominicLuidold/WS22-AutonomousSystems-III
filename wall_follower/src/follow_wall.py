@@ -64,15 +64,34 @@ class WallFollowerTwo:
         front_right = self._laser_data['front_right']
         right = self._laser_data['right']
         back_right = self._laser_data['back_right']
+  
+        twist = Twist()
 
         # if any left is smallest: turn left
+        if min(left, front_left, back_left) < min(front, front_right, right, back_right):
+            twist = self.turnLeft()
         # if front is smallest or front is < threshold: turn left
+        elif front < min(back_left, left, front_left, front_right, right, back_right) or (front <= SAFE_STOP_DISTANCE and front > 0):
+            twist = self.turnLeft()
         # if rigt is smallest: drive straight
+        elif min(right, front_right, back_right) < min(back_left, left, front_left, front):
             # if front_right is smaller than back_right: turn left a bit
+            if front_right < back_right:
+                twist = self.followWall()
+                twist.angular.z += 0.05
             # if back_right is smaller than front_right: turn right a bit
+            elif back_right < front_right:
+                twist = self.followWall()
+                twist.angular.z -= 0.05
+            else:
+                twist = self.followWall()
         # if back_right is smallest: turn right a lot
+        elif back_right < min(back_left, left, front_left, front_right, right, front):
+            twist = Twist()
+            twist.angular.z = -0.4
+        else:
+            twist = self.findWall()
 
-        twist = Twist()       
         self._cmd_vel_pub.publish(twist)
         self._rate.sleep()
 
