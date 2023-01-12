@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import rospy
+import math
 import numpy as np
+import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
@@ -28,13 +29,12 @@ class WallFollowerTwo:
 
         # Initialize laser data until real data is read
         self._laser_data = {
-            'back_left': 0,
             'left': 0,
             'front_left': 0,
             'front': 0,
             'front_right': 0,
             'right': 0,
-            'back_right': 0
+            'back_left': 0
         }
 
         # Start wall-following
@@ -43,80 +43,97 @@ class WallFollowerTwo:
             pass 
 
     def update_laser_data(self, msg: LaserScan) -> None:
+        range_min = msg.range_min
         self._laser_data = {
-            'back_left':  min(msg.ranges[120:149]),
-            'left':  min(msg.ranges[75:104]),
-            'front_left': min(msg.ranges[30:59]),
-            'front': min(min(msg.ranges[0:14]), min(msg.ranges[345:359])),
-            'front_right':  min(msg.ranges[300:329]),
-            'right':  min(msg.ranges[255:284]),
-            'back_right':  min(msg.ranges[210:239])
+            'back_right': min_greater_range_min(msg.ranges[210:239], range_min),
+            'right': min_greater_range_min(msg.ranges[240:299], range_min),
+            'front_right': min_greater_range_min(msg.ranges[300:329], range_min),
+            'front': min_greater_range_min([min_greater_range_min(msg.ranges[330:359], range_min), min_greater_range_min(msg.ranges[0:29], range_min)], range_min),
+            'front_left': min_greater_range_min(msg.ranges[30:59], range_min),
+            'left': min_greater_range_min(msg.ranges[60:119], range_min),
+            'back_left': min_greater_range_min(msg.ranges[120:149], range_min)
         }
 
         if DEBUG and SHOW_LIDAR_DATA:
             rospy.logdebug(self._laser_data)
 
     def move(self) -> None:
-        back_left = self._laser_data['back_left']
-        left = self._laser_data['left']
-        front_left = self._laser_data['front_left']
-        front = self._laser_data['front']
-        front_right = self._laser_data['front_right']
-        right = self._laser_data['right']
-        back_right = self._laser_data['back_right']
-  
-        twist = Twist()
-
-        # if any left is smallest: turn left
-        if min(left, front_left, back_left) < min(front, front_right, right, back_right):
-            twist = self.turnLeft()
-        # if front is smallest or front is < threshold: turn left
-        elif front < min(back_left, left, front_left, front_right, right, back_right) or (front <= SAFE_STOP_DISTANCE and front > 0):
-            twist = self.turnLeft()
-        # if rigt is smallest: drive straight
-        elif min(right, front_right, back_right) < min(back_left, left, front_left, front):
-            # if front_right is smaller than back_right: turn left a bit
-            if front_right < back_right:
-                twist = self.followWall()
-                twist.angular.z += 0.05
-            # if back_right is smaller than front_right: turn right a bit
-            elif back_right < front_right:
-                twist = self.followWall()
-                twist.angular.z -= 0.05
-            else:
-                twist = self.followWall()
-        # if back_right is smallest: turn right a lot
-        elif back_right < min(back_left, left, front_left, front_right, right, front):
-            twist = Twist()
-            twist.angular.z = -0.4
+        if self._laser_data['front'] > SAFE_STOP_DISTANCE and self._laser_data['front_left'] > SAFE_STOP_DISTANCE and self._laser_data['front_right'] > SAFE_STOP_DISTANCE and self._laser_data['back_right'] > SAFE_STOP_DISTANCE:
+            # Wall not in front
+            twist = self.drive_to_wall_in_front()
+        elif self._laser_data['front'] > SAFE_STOP_DISTANCE and self._laser_data['front_left'] > SAFE_STOP_DISTANCE and self._laser_data['front_right'] > SAFE_STOP_DISTANCE and self._laser_data['back_right'] < SAFE_STOP_DISTANCE:
+            # Wall back right (90° right corners)
+            twist = self.turn_right()
+        elif self._laser_data['front'] < SAFE_STOP_DISTANCE and self._laser_data['front_left'] > SAFE_STOP_DISTANCE and self._laser_data['front_right'] > SAFE_STOP_DISTANCE:
+            # Wall in front;
+            twist = self.turn_left()
+        elif self._laser_data['front'] > SAFE_STOP_DISTANCE and self._laser_data['front_left'] > SAFE_STOP_DISTANCE and self._laser_data['front_right'] < SAFE_STOP_DISTANCE:
+            # wall to right
+            twist = self.follow_wall()
+        elif self._laser_data['front'] > SAFE_STOP_DISTANCE and self._laser_data['front_left'] < SAFE_STOP_DISTANCE and self._laser_data['front_right'] > SAFE_STOP_DISTANCE:
+            # wall in front - left
+            twist = self.find_wall()
+        elif self._laser_data['front'] < SAFE_STOP_DISTANCE and self._laser_data['front_left'] > SAFE_STOP_DISTANCE and self._laser_data['front_right'] < SAFE_STOP_DISTANCE:
+            # wall in front - right
+            twist = self.turn_left()
+        elif self._laser_data['front'] < SAFE_STOP_DISTANCE and self._laser_data['front_left'] < SAFE_STOP_DISTANCE and self._laser_data['front_right'] > SAFE_STOP_DISTANCE:
+            # wall in front , front - left no right
+            twist = self.turn_left()
+        elif self._laser_data['front'] < SAFE_STOP_DISTANCE and self._laser_data['front_left'] < SAFE_STOP_DISTANCE and self._laser_data['front_right'] < SAFE_STOP_DISTANCE:
+            # wall in front-left
+            twist = self.turn_left()
+        elif self._laser_data['front'] > SAFE_STOP_DISTANCE and self._laser_data['front_left'] < SAFE_STOP_DISTANCE and self._laser_data['front_right'] < SAFE_STOP_DISTANCE:
+            # wall in front - left and front right
+            twist = self.find_wall()
         else:
-            twist = self.findWall()
+            twist = Twist()
+            rospy.logwarn('Unknown robot status/location')
 
         self._cmd_vel_pub.publish(twist)
         self._rate.sleep()
 
-    def findWall(self) -> Twist:
-        rospy.loginfo("Finding wall..")
+    def drive_to_wall_in_front(self) -> Twist:
+        rospy.loginfo('Driving to wall in front..')
         twist = Twist()
         twist.linear.x = 0.2
-        twist.angular.z = 0
 
         return twist
 
-    def turnLeft(self) -> Twist:
-        rospy.loginfo("Turning left..")
-        twist = Twist()
-        twist.angular.z = 0.4
-
-        return twist
-
-    def followWall(self) -> Twist:
-        rospy.loginfo("Following wall..")
+    def find_wall(self) -> Twist:
+        rospy.loginfo('Finding wall..')
         twist = Twist()
         twist.linear.x = 0.15
-        twist.angular.z = -0.2
+        twist.angular.z = -0.25
 
         return twist
+
+    def turn_left(self) -> Twist:
+        rospy.loginfo('Turning left..')
+        twist = Twist()
+        twist.angular.z = 0.3
+
+        return twist
+
+    def turn_right(self) -> Twist:
+        rospy.loginfo('Turning right..')
+        twist = Twist()
+        twist.angular.z = -0.8
+
+        return twist
+
+    def follow_wall(self) -> Twist:
+        rospy.loginfo('Following wall..')
+        twist = Twist()
+        twist.linear.x = 0.5
+
+        return twist
+
+def min_greater_range_min(ranges: list, min_value: float) -> float:
+    values_greather_range_min = [i for i in ranges if i > min_value]
+    if (len(values_greather_range_min) == 0):
+        return math.inf
+
+    return min(values_greather_range_min)
 
 def main() -> None:
     # Init
