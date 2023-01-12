@@ -10,5 +10,5 @@
     <param name="hertz_rate" type="double" value="$(arg sleep_rate)" />
 
     <!-- Start wall following -->
-    <node pkg="wall_follower" type="follow_wall_by_degree.py" name="follow_wall" respawn="true" output="screen" />
+    <node pkg="wall_follower" type="follow_wall_proportional.py" name="follow_wall" respawn="true" output="screen" />
 </launch>
