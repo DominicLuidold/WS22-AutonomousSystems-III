@@ -30,8 +30,6 @@ class Turtle:
           if b.isApplicable(self.__respicam_detector.tokens):
             b.execute(self, self.__respicam_detector.tokens)
             break
-      else:
-        self.move(0,0)
       rospy.Rate(10).sleep()
 
 
