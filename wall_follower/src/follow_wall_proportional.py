@@ -49,14 +49,13 @@ class TurnTowardsWall:
     if scan:
       ranges = scan.ranges
       range_min = scan.range_min
-      # order of sensors: front, front_left, left
+      # order of sensors: front, front_left, left, behind_left
       dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]
       if dist[0] > max_detection_dist and dist[1] > max_detection_dist and dist[2] <= max_detection_dist:
         return True
     return False
 
   def execute(self, turtle: WallFollower):
-    rospy.loginfo('turn')
     ranges = turtle.scan.ranges
     range_min = turtle.scan.range_min
     dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]
@@ -80,7 +79,6 @@ class FollowWall:
     return False
 
   def execute(self, turtle: WallFollower):
-    rospy.loginfo('follow')
     ranges = turtle.scan.ranges
     range_min = turtle.scan.range_min
     # order of sensors: front, front_left, left
@@ -94,7 +92,7 @@ class FollowWall:
       if dist[i] <= sensitivity_dist[i]:
         linear_velocity -= linear_k[i] * (1 - (dist[i] - min_detection_dist) / (sensitivity_dist[i] - min_detection_dist))
         angular_velocity += angular_k[i] * (1 - (dist[i] - min_detection_dist) / (sensitivity_dist[i] - min_detection_dist))
-    print('follow linear {} angular {} sensors {}'.format(linear_velocity, angular_velocity, dist))
+    rospy.logdebug('follow linear {} angular {} sensors {}'.format(linear_velocity, angular_velocity, dist))
     turtle.publish_move(linear_velocity, angular_velocity)
 
 
