@@ -5,6 +5,6 @@ class FindWall:
     """ always """
     return True
 
-  def execute(self, token_detector):
+  def execute(self, killerrobot, token_detector):
     """ move towards point in wall where follower was exited """
     pass

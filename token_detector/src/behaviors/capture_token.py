@@ -5,5 +5,5 @@ class CaptureToken:
     """ if StepOntoToken just finished && token has not been registered yet """
     return False
 
-  def execute(self, token_detector):
+  def execute(self, killerrobot, token_detector):
     """ register coordinates and move on """

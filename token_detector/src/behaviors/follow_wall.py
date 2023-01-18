@@ -5,6 +5,6 @@ class FollowWall:
     """ if wall is to the right """
     return False
 
-  def execute(self, token_detector):
+  def execute(self, killerrobot, token_detector):
     """ follow """
     pass

@@ -13,23 +13,23 @@ from behaviors.follow_wall import FollowWall
 from behaviors.move_towards_token import MoveTowardsToken
 from behaviors.step_onto_token import StepOntoToken
 
-class Turtle:
+class TokenDetector:
 
   def __init__(self):
     rospy.init_node('token_detector', anonymous=True)
     self.__pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     self.__behaviors = [CaptureToken(), StepOntoToken(), MoveTowardsToken(), FollowWall(), FindWall()]
     self.__tokens = [] # (x,y) coordinates of tokens
-    self.__respicam_detector = RaspicamDetector()
+    self.__raspicam_detector = RaspicamDetector()
+    self.max_speed = 0.22
 
 
   def keep_movin(self):
     while not rospy.is_shutdown():
-      if len(self.__respicam_detector.tokens):
-        for b in self.__behaviors:
-          if b.isApplicable(self.__respicam_detector.tokens):
-            b.execute(self, self.__respicam_detector.tokens)
-            break
+      for b in self.__behaviors:
+        if b.isApplicable(self.__raspicam_detector.tokens):
+          b.execute(self, self.__raspicam_detector.tokens)
+          break
       rospy.Rate(10).sleep()
 
 
@@ -43,8 +43,8 @@ class Turtle:
 
 
 if __name__ == '__main__':
-  tb = Turtle()
-  tb.keep_movin()
+  td = TokenDetector()
+  td.keep_movin()
   try:
     rospy.spin()
   except KeyboardInterrupt:
