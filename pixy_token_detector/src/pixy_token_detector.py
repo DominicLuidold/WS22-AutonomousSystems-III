@@ -11,7 +11,6 @@ class TokenRecognizer:
         #Counter for letting intermediate blocks that don't recognize the tag fly through
         self._counter = 0
         # Publish
-        self._rate = rospy.Rate(100)
         self._cmd_sub = rospy.Subscriber('/my_pixy/block_data', PixyData, self.process)
 
 
@@ -27,8 +26,6 @@ class TokenRecognizer:
             #Here the counter is checked
             if self._counter > 5:
                 print("Nothing to see here")
-
-        self._rate.sleep()
     
     
     def found_tag(self, data) -> bool:

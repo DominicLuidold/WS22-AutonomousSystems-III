@@ -5,8 +5,7 @@ class StepOntoToken:
   """ Use pixycam to position above token """
 
   def __init__(self):
-    self.__rospy_rate = 10
-    self.__pixycam_detector = PixycamDetector(self.__rospy_rate)
+    self.__pixycam_detector = PixycamDetector()
     self.position = (0,0)
 
   def isApplicable(self, tokens):
@@ -18,5 +17,4 @@ class StepOntoToken:
   def execute(self, killerrobot, tokens):
     """ position above token """
     rospy.loginfo('behavior: step onto token')
-    killerrobot.move(killerrobot.max_speed / 10, 0)
-    pass
+    killerrobot.move(killerrobot.max_speed / 7, 0)
