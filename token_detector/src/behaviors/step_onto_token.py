@@ -18,3 +18,4 @@ class StepOntoToken:
     """ position above token """
     rospy.loginfo('behavior: step onto token')
     self.__killerrobot.move(self.__killerrobot.max_speed / 7, 0)
+    self.__killerrobot._isovertoken = True

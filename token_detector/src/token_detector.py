@@ -24,10 +24,11 @@ class TokenDetector:
 
     self.__behaviors = [WallFollower(self), FindWall(self)]
     if (False == IGNORE_TOKEN):
-      self.__behaviors.append([CaptureToken(self), StepOntoToken(self), MoveTowardsToken(self)])
+      self.__behaviors.append([StepOntoToken(self), CaptureToken(self), MoveTowardsToken(self)])
 
     self.__tokens = [] # (x,y) coordinates of tokens
     self.max_speed = 0.22
+    self._isovertoken = False
 
   def keep_movin(self):
     while not rospy.is_shutdown():
