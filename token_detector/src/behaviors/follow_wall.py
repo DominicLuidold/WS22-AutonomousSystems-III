@@ -49,7 +49,7 @@ class WallFollower:
     return any([b.isApplicable(self._scan, self._odom, self._started) for b in self._behaviors])
 
   def execute(self):
-    """ follow """
+    rospy.logdebug('behavior: follow wall')
     for b in self._behaviors:
       if b.isApplicable(self._scan, self._odom, self._started):
         b.execute(self._scan, self.publish_move)

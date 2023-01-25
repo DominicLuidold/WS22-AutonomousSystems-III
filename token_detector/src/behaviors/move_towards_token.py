@@ -1,4 +1,5 @@
 from camera_integrators.raspicam_detector import RaspicamDetector
+import rospy
 
 class MoveTowardsToken:
   """ Target is ahead and in sight """
@@ -12,6 +13,7 @@ class MoveTowardsToken:
 
   def execute(self):
     clst_tkn = self.__raspicam_detector.tokens[0]
-    linear_velocity = 0.2 * clst_tkn[2] + 0.05
+    linear_velocity = 0.1 * clst_tkn[2] + 0.05
     angular_velocity = clst_tkn[3] * 0.35
+    #rospy.loginfo(f'{linear_velocity}, {angular_velocity}')
     self.__killerrobot.move(linear_velocity, angular_velocity)

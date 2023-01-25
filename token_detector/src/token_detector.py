@@ -27,7 +27,7 @@ class TokenDetector:
         if b.isApplicable():
           b.execute()
           break
-      rospy.Rate(10).sleep()
+      rospy.Rate(50).sleep()
 
   def move(self, linear, angular):
     move = Twist()
