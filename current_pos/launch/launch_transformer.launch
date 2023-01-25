@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="current_pos" type="transform_position.py" name="transform_position" output="screen" />
+</launch>

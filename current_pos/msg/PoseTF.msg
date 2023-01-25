@@ -1,0 +1,3 @@
+std_msgs/Header header
+PoseInMap mapPose
+geometry_msgs/Pose originalPose
