@@ -1,4 +1,0 @@
-<launch>
-    <node pkg="find_yourself" type="read_position.py" name="read_position" output="screen" />
-    <!--<include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch" /> -->
-</launch>

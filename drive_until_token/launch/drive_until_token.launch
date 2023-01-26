@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="drive_until_token" type="drive_until_token.py" name="drive_until_token" output="screen" />
-</launch>
