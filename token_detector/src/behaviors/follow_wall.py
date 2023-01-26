@@ -3,20 +3,15 @@ import math
 import rospy
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
+from helpers.helper import filtered_min
+import math
 
 # Config
 MAX_SPEED = 0.13
 MIN_DETECTION_DIST = 0.03
 MAX_DETECTION_DIST = 0.3
 MAX_TARGET_DISTANCE = 0.2
-
-def filtered_min(ranges: list, min_value: float) -> float:
-  """ returns minimum value in ranges that is not lower than min_value """
-  values_greather_range_min = [i for i in ranges if i > min_value]
-  if (len(values_greather_range_min) == 0):
-      return math.inf
-
-  return min(values_greather_range_min)
 
 def isNearStart(x: float, y: float, distance: float) -> bool:
     return abs(x) < distance and abs(y) < distance
