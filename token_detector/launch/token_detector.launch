@@ -9,4 +9,7 @@
 
     <!-- Start token detection -->
     <node pkg="token_detector" type="token_detector.py" name="token_detector" output="screen"></node>
+
+    <!-- Nodes token_detector depends on -->
+    <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
 </launch>
