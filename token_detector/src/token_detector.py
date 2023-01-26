@@ -12,6 +12,9 @@ from behaviors.follow_wall import WallFollower
 from behaviors.move_towards_token import MoveTowardsToken
 from behaviors.step_onto_token import StepOntoToken
 
+# Launch arguments
+DEBUG = rospy.get_param('debug')
+
 class TokenDetector:
 
   def __init__(self):
@@ -36,10 +39,14 @@ class TokenDetector:
     rospy.logdebug(f'pub {move.linear.x} {move.angular.z}')
     self.__pub.publish(move)
 
+def main() -> None:
+  # Init
+  log_level = rospy.DEBUG if DEBUG else rospy.INFO
+  rospy.init_node('token_detector', log_level=log_level)
 
-if __name__ == '__main__':
   td = TokenDetector()
   td.keep_movin()
+  
   try:
     rospy.spin()
   except KeyboardInterrupt:
