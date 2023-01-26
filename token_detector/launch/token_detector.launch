@@ -1,9 +1,11 @@
 <launch>
     <!-- Optional arguments -->
     <arg name="debug" default="false" doc="show debug messages if `true`" />
+    <arg name="ignore_token" default="false" doc="ignore token if `true`" />
 
     <!-- Parameters -->
     <param name="debug" type="bool" value="$(arg debug)" />
+    <param name="ignore_token" type="bool" value="$(arg ignore_token)" />
 
     <!-- Start token detection -->
     <node pkg="token_detector" type="token_detector.py" name="token_detector" output="screen"></node>

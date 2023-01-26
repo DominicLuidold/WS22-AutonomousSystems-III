@@ -14,13 +14,18 @@ from behaviors.step_onto_token import StepOntoToken
 
 # Launch arguments
 DEBUG = rospy.get_param('debug')
+IGNORE_TOKEN = rospy.get_param('ignore_token')
 
 class TokenDetector:
 
   def __init__(self):
     rospy.init_node('token_detector', anonymous=True)
     self.__pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-    self.__behaviors = [CaptureToken(self), StepOntoToken(self), MoveTowardsToken(self), WallFollower(self), FindWall(self)]
+
+    self.__behaviors = [WallFollower(self), FindWall(self)]
+    if (False == IGNORE_TOKEN):
+      self.__behaviors.append([CaptureToken(self), StepOntoToken(self), MoveTowardsToken(self)])
+
     self.__tokens = [] # (x,y) coordinates of tokens
     self.max_speed = 0.22
 
