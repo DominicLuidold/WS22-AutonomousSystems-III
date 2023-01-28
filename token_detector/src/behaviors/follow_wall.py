@@ -1,11 +1,9 @@
 #!/usr/bin/env python
-import math
+import os
 import rospy
+from helpers.helper import filtered_min
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import Odometry
-from helpers.helper import filtered_min
-import math
 
 # Config
 MAX_SPEED = 0.13
@@ -29,6 +27,7 @@ class WallFollower:
     self._scan = None
     self._odom = None
     self._started = False
+    self._map_saved = False
 
     # Subscribed topics
     rospy.Subscriber('scan', LaserScan, self.__process_scan)
@@ -53,7 +52,7 @@ class WallFollower:
     rospy.logdebug('behavior: follow wall')
     for b in self._behaviors:
       if b.isApplicable(self._scan, self._odom, self._started):
-        b.execute(self._scan, self.publish_move)
+        b.execute(self._scan, self.publish_move, self._map_saved)
         break
 
   def publish_move(self, linear, angular) -> None:
@@ -61,7 +60,6 @@ class WallFollower:
 
 
 class CompleteRoundtrip:
-
   def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool) -> None:
     # Check when odom value is entered and if it has left the starting area
     if odom is not None and started:
@@ -73,7 +71,12 @@ class CompleteRoundtrip:
 
     return False
 
-  def execute(self, scan: LaserScan, publish_move):
+  def execute(self, scan: LaserScan, publish_move, map_saved: bool) -> None:
+      if not map_saved:
+        rospy.loginfo("Saving map!")
+        os.system("rosrun map_server map_saver -f /dominic/catkin_ws/map/saved-map")
+        map_saved = True
+
       rospy.loginfo("Finished")
 
 class TurnTowardsWall:
@@ -114,7 +117,7 @@ class FollowWall:
       return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move):
+  def execute(self, scan: LaserScan, publish_move, map_saved: bool) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     # order of sensors: front, front_left, left
