@@ -54,7 +54,7 @@ Gerät | IP Adresse |
 Turtlebot | 192.168.0.50
 VM Stefan | 192.168.0.55
 VM Dominik | 192.168.0.54
-Florian | 
+Florian | 192.168.0.52
 
 # Commands
 
@@ -221,6 +221,15 @@ rosrun rqt_graph rqt_graph
 <td></td><td>
 
 ``` 
+rosrun rqt_reconfigure rqt_reconfigure
+```
+
+</td><td>For adjusting parameters of the turtlebot.</td>
+</tr>
+<tr>
+<td></td><td>
+
+``` 
 raspistill -v -o test.jpg
 ```
 
@@ -329,3 +338,39 @@ Link: https://answers.ros.org/question/391646/no-camera-topics/
     ```
 3. Then start rviz with turtlebot3_slam
 4. Activate image! 
+
+### For trying the drive towards token function
+1. Start roscore and bringup
+
+(Steps 2-5 can be done in one go via the preconfigured launch file)
+
+2. Start SLAM
+3. Let wallfollower map whole labyrinth
+4. Save map to /killerrobot/saved-map
+5. Close SLAM
+6. Start navigation with map
+7. Find position either via AMCL or 2DNavPose
+8. Saving target coordinates via
+    1. Starting current_pos
+    2. Moving to target position 
+    3. Writing the coordinates to /killerrobot/token_positions.json
+9. Move to other position
+10. Move to position by letting:
+``` 
+roslaunch token_inspector navigator.launch
+```
+    
+Run for a few seconds.
+
+Current actions can be seen in RVIZ (red arrow) and in the console of the turtlebot3_navigation the current steps are logged.
+Alternatively you can look at the status of the Move pase via /move_base/status topic.
+
+#### Issues:
+- Transformation of position does not yet work correctly (are in relation to the turtlebots current position as far as I know)
+- Path is not free, as turtlebot is to large
+
+Parameters can be changed via:
+```
+rosrun rqt_reconfigure rqt_reconfigure
+```
+Manual is in shared OneDrive folder or accessible via http://www.zkytony.com/documents/navguide.pdf 
