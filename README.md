@@ -47,6 +47,15 @@ export TURTLEBOT3_MODEL=burger
 </table>
 
 
+## IP Adressen
+
+Gerät | IP Adresse |
+|---|---
+Turtlebot | 192.168.0.50
+VM Stefan | 192.168.0.55
+VM Dominik | 192.168.0.54
+Florian | 
+
 # Commands
 
 <table>

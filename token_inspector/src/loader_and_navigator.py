@@ -1,5 +1,5 @@
 import rospy
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
 from sensor_msgs.msg import LaserScan
 from move_base_msgs.msg import MoveBaseGoal, MoveBaseAction
 from nav_msgs.msg import MapMetaData, OccupancyGrid, Odometry
@@ -39,6 +39,8 @@ class NavigationScheduler:
         self._mapInfo = MapMetaData()
         self._mapInfo = rospy.wait_for_message("map", OccupancyGrid).info
 
+        self._move_base_client = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+
         for pos in tokenpositions:
             odomPose = self.calculateOdom(pos)
             self._tokenpositions[pos["name"]] = odomPose
@@ -48,7 +50,12 @@ class NavigationScheduler:
         #for each self._tokenpositions
         #self.calculateDistance(odomPose)
 
-        self.driveToPosition(self._tokenpositions[0])
+        while not rospy.is_shutdown():
+
+            self.driveToPosition(self._tokenpositions[0])
+
+        rospy.logdebug("AAAAAh - finished")
+
 
     def calculateOdom(self, mapPose):
         rospy.logdebug("Calculating odom")
@@ -69,17 +76,15 @@ class NavigationScheduler:
         target_pose = Pose(Point(pos[0][0],pos[0][1],pos[0][2]), Quaternion(0.0,0.0,0.0,-1.0))
         rospy.logdebug(str(target_pose))
         
-        target = MoveBaseGoal()
-        target.target_pose.header.frame_id = "map"
-        target.target_pose.pose = target_pose
+        target = PoseStamped()
+        target.header.frame_id = "base_link"
+        #target.target_pose.header.frame_id = "map"
+        target.pose = target_pose
 
-        client = actionlib.SimpleActionClient("move_base/goal", MoveBaseAction)
+        self._move_base_client.publish(target)
 
-
-        client.send_goal(target)
-
-        client.wait_for_result()
-        rospy.logdebug("AAAAAh - finished")
+        #client.wait_for_result()
+        rospy.logdebug("Sent pose")
 
 def main():
     try:
