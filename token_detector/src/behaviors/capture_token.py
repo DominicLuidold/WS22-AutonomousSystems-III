@@ -11,14 +11,12 @@ class CaptureToken:
   def __init__(self, killerroboter) -> None:
     self._killerroboter = killerroboter
     self._tagno = 0
-    self._filename = "~/catkin_ws/positions.json"
+    self._filename = "/killerrobot/token_positions.json"
 
   def isApplicable(self):
-    #remove before production
-    #return True
     """ if StepOntoToken just finished && token has not been registered yet """
-    if self._killerroboter._isovertoken :
-      self._killerroboter._isovertoken = False
+    if self._killerroboter.isovertoken:
+      self._killerroboter.isovertoken = False
       return True
     return False
 
@@ -27,7 +25,6 @@ class CaptureToken:
     pos = rospy.wait_for_message("pose_tf", PoseTF)
     listobj = []
 
-    #print(pos)
     #get position
     dictionary = {
       "name": self._tagno,
@@ -38,7 +35,7 @@ class CaptureToken:
       }
     }
 
-    if path.isfile(self._filename) :
+    if path.isfile(self._filename):
       with open(self._filename) as fp:
         listobj = json.load(fp)
 
