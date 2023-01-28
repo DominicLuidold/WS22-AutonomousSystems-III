@@ -1,19 +1,17 @@
+#!/usr/bin/env python
 import json
 import rospy
 from os import path
-#from token_detector import TokenDetector
-
 from current_pos.msg import PoseTF
 
 class CaptureToken:
   """ Register the token with coordinates """
-
   def __init__(self, killerroboter) -> None:
     self._killerroboter = killerroboter
     self._tagno = 0
     self._filename = "/killerrobot/token_positions.json"
 
-  def isApplicable(self):
+  def isApplicable(self) -> bool:
     """ if StepOntoToken just finished && token has not been registered yet """
     if self._killerroboter.isovertoken:
       self._killerroboter.isovertoken = False

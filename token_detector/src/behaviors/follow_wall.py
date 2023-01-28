@@ -18,7 +18,7 @@ def isNearStart(x: float, y: float, distance: float) -> bool:
 class WallFollower:
   """ Follow wall on the left side """
   
-  def __init__(self, killerrobot):
+  def __init__(self, killerrobot) -> None:
     # Init
     rospy.loginfo("WallFollower behavior initialized!")
 
@@ -55,10 +55,10 @@ class WallFollower:
         b.execute(self._scan, self.publish_move, self.mark_map_as_saved, self._map_saved)
         break
 
-  def publish_move(self, linear, angular) -> None:
+  def publish_move(self, linear: float, angular: float) -> None:
     self.__killerrobot.move(linear, angular)
 
-  def mark_map_as_saved(self):
+  def mark_map_as_saved(self) -> None:
     self._map_saved = True
 
 
@@ -74,7 +74,7 @@ class CompleteRoundtrip:
 
     return False
 
-  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved) -> None:
+  def execute(self, scan: LaserScan, publish_move: function, mark_map_as_saved: function, map_saved: bool) -> None:
       if not map_saved:
         rospy.loginfo("Saving map!")
         os.system("rosrun map_server map_saver -f /killerrobot/saved-map")
@@ -82,7 +82,7 @@ class CompleteRoundtrip:
       rospy.loginfo("Finished")
 
 class TurnTowardsWall:
-  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool):
+  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool) -> bool:
     """
     Applicable as soon as the wall bends away from the turtle (it moved past the corner)
     Stops and turns left.
@@ -96,7 +96,7 @@ class TurnTowardsWall:
         return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved):
+  def execute(self, scan: LaserScan, publish_move: function, mark_map_as_saved: function, map_saved: bool) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]

@@ -18,7 +18,6 @@ IGNORE_TOKEN = rospy.get_param('ignore_token')
 NUM_TOKENS = rospy.get_param('num_tokens')
 
 class TokenDetector:
-
   def __init__(self):
     self._movement_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
@@ -38,7 +37,7 @@ class TokenDetector:
           break
       rospy.Rate(50).sleep()
 
-  def move(self, linear, angular):
+  def move(self, linear: float, angular: float) -> None:
     move = Twist()
     move.linear.x = linear
     move.angular.z = angular
