@@ -77,7 +77,7 @@ class CompleteRoundtrip:
   def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved) -> None:
       if not map_saved:
         rospy.loginfo("Saving map!")
-        os.system("rosrun map_server map_saver -f ~/tmp/saved-map")
+        os.system("rosrun map_server map_saver -f ~/catkin_ws/map")
         mark_map_as_saved()
       rospy.loginfo("Finished")
 

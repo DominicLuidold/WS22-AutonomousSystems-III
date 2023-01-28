@@ -11,7 +11,7 @@ class CaptureToken:
   def __init__(self, killerroboter) -> None:
     self._killerroboter = killerroboter
     self._tagno = 0
-    self._filename = "/home/dominic/catkin_ws/positions.json"
+    self._filename = "~/catkin_ws/positions.json"
 
   def isApplicable(self):
     #remove before production
