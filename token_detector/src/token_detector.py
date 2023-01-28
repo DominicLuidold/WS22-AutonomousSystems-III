@@ -15,6 +15,7 @@ from behaviors.step_onto_token import StepOntoToken
 # Launch arguments
 DEBUG = rospy.get_param('debug')
 IGNORE_TOKEN = rospy.get_param('ignore_token')
+NUM_TOKENS = rospy.get_param('num_tokens')
 
 class TokenDetector:
 
@@ -30,7 +31,7 @@ class TokenDetector:
     self.isovertoken = False
 
   def keep_movin(self):
-    while not rospy.is_shutdown():
+    while not rospy.is_shutdown() and NUM_TOKENS > len(self.tokens):
       for b in self._behaviors:
         if b.isApplicable():
           b.execute()
