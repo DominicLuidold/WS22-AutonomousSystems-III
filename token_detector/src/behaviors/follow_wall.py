@@ -52,11 +52,14 @@ class WallFollower:
     rospy.logdebug('behavior: follow wall')
     for b in self._behaviors:
       if b.isApplicable(self._scan, self._odom, self._started):
-        b.execute(self._scan, self.publish_move, self._map_saved)
+        b.execute(self._scan, self.publish_move, self.mark_map_as_saved, self._map_saved)
         break
 
   def publish_move(self, linear, angular) -> None:
     self.__killerrobot.move(linear, angular)
+
+  def mark_map_as_saved(self):
+    self._map_saved = True
 
 
 class CompleteRoundtrip:
@@ -71,12 +74,11 @@ class CompleteRoundtrip:
 
     return False
 
-  def execute(self, scan: LaserScan, publish_move, map_saved: bool) -> None:
+  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved) -> None:
       if not map_saved:
         rospy.loginfo("Saving map!")
-        os.system("rosrun map_server map_saver -f /dominic/catkin_ws/map/saved-map")
-        map_saved = True
-
+        os.system("rosrun map_server map_saver -f ~/tmp/saved-map")
+        mark_map_as_saved()
       rospy.loginfo("Finished")
 
 class TurnTowardsWall:
@@ -94,7 +96,7 @@ class TurnTowardsWall:
         return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move):
+  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved):
     ranges = scan.ranges
     range_min = scan.range_min
     dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]
@@ -117,7 +119,7 @@ class FollowWall:
       return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move, map_saved: bool) -> None:
+  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     # order of sensors: front, front_left, left
