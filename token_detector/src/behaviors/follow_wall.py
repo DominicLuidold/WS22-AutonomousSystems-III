@@ -74,7 +74,7 @@ class CompleteRoundtrip:
 
     return False
 
-  def execute(self, scan: LaserScan, publish_move: function, mark_map_as_saved: function, map_saved: bool) -> None:
+  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved: bool) -> None:
       if not map_saved:
         rospy.loginfo("Saving map!")
         os.system("rosrun map_server map_saver -f /killerrobot/saved-map")
@@ -96,7 +96,7 @@ class TurnTowardsWall:
         return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move: function, mark_map_as_saved: function, map_saved: bool) -> None:
+  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved: bool) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]
