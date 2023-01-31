@@ -5,6 +5,8 @@ from helpers.helper import filtered_min
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 
+NUM_TOKENS = rospy.get_param('num_tokens')
+
 # Config
 MAX_SPEED = 0.13
 MIN_DETECTION_DIST = 0.03
@@ -27,7 +29,6 @@ class WallFollower:
     self._scan = None
     self._odom = None
     self._started = False
-    self._map_saved = False
 
     # Subscribed topics
     rospy.Subscriber('scan', LaserScan, self.__process_scan)
@@ -46,43 +47,46 @@ class WallFollower:
 
   def isApplicable(self) -> bool:
     """ if wall is somewhere at front """
-    return any([b.isApplicable(self._scan, self._odom, self._started) for b in self._behaviors])
+    return any([b.isApplicable(self._scan, self._odom, self._started, self.__killerrobot) for b in self._behaviors])
 
   def execute(self) -> None:
     rospy.logdebug('behavior: follow wall')
     for b in self._behaviors:
-      if b.isApplicable(self._scan, self._odom, self._started):
-        b.execute(self._scan, self.publish_move, self.mark_map_as_saved, self._map_saved)
+      if b.isApplicable(self._scan, self._odom, self._started, self.__killerrobot):
+        b.execute(self._scan, self.publish_move, self.__killerrobot)
         break
 
   def publish_move(self, linear: float, angular: float) -> None:
     self.__killerrobot.move(linear, angular)
 
-  def mark_map_as_saved(self) -> None:
-    self._map_saved = True
-
 
 class CompleteRoundtrip:
-  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool) -> None:
+  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool, killerrobot) -> None:
     # Check when odom value is entered and if it has left the starting area
     if odom is not None and started:
         rospy.logdebug("Check: x: " + str(odom.pose.pose.position.x) + " , y: " + str(odom.pose.pose.position.y))
 
         #check if turtlebot has reached its initial starting position
         if isNearStart(odom.pose.pose.position.x, odom.pose.pose.position.y, MAX_TARGET_DISTANCE):
+          
+          rospy.logerr(killerrobot.map_saved)
+          if not killerrobot.map_saved:
             return True
+          else:
+            if NUM_TOKENS <= len(killerrobot.tokens):
+              return True
 
     return False
 
-  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved: bool) -> None:
-      if not map_saved:
+  def execute(self, scan: LaserScan, publish_move, killerrobot) -> None:
+      if not killerrobot.map_saved:
         rospy.loginfo("Saving map!")
         os.system("rosrun map_server map_saver -f /killerrobot/saved-map")
-        mark_map_as_saved()
+        killerrobot.map_saved = True
       rospy.loginfo("Finished")
 
 class TurnTowardsWall:
-  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool) -> bool:
+  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool, killerrobot) -> bool:
     """
     Applicable as soon as the wall bends away from the turtle (it moved past the corner)
     Stops and turns left.
@@ -96,7 +100,7 @@ class TurnTowardsWall:
         return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved: bool) -> None:
+  def execute(self, scan: LaserScan, publish_move, killerrobot) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     dist = [filtered_min(ranges[:15] + ranges[-15:], range_min), filtered_min(ranges[30:60], range_min), filtered_min(ranges[75:105], range_min), filtered_min(ranges[120:150], range_min)]
@@ -114,12 +118,12 @@ class FollowWall:
   Takes into account the sensors in front, left front and on the left hand side
   and calculates the linear and angular velocity.
   """
-  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool) -> bool:
+  def isApplicable(self, scan: LaserScan, odom: Odometry, started: bool, killerrobot) -> bool:
     if scan and any(item < MAX_DETECTION_DIST for item in scan.ranges):
       return True
     return False
 
-  def execute(self, scan: LaserScan, publish_move, mark_map_as_saved, map_saved) -> None:
+  def execute(self, scan: LaserScan, publish_move, killerrobot) -> None:
     ranges = scan.ranges
     range_min = scan.range_min
     # order of sensors: front, front_left, left

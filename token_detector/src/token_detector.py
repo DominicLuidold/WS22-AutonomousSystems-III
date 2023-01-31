@@ -14,23 +14,36 @@ from behaviors.step_onto_token import StepOntoToken
 
 # Launch arguments
 DEBUG = rospy.get_param('debug')
-IGNORE_TOKEN = rospy.get_param('ignore_token')
+IGNORE_TOKEN_INITIALLY = rospy.get_param('ignore_tokens_initially')
 NUM_TOKENS = rospy.get_param('num_tokens')
 
 class TokenDetector:
   def __init__(self):
-    self._movement_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-
-    if IGNORE_TOKEN:
-      self._behaviors = [WallFollower(self), FindWall(self)]
-    else:
-      self._behaviors = [StepOntoToken(self), CaptureToken(self), MoveTowardsToken(self), WallFollower(self), FindWall(self)]
-    self.tokens = [] # (id,x,y,angle) info of tokens
+    # Initial config
     self.max_speed = 0.22
     self.isovertoken = False
+    self.tokens = [] # (id,x,y,angle) info of tokens
+    self.map_saved = False
+
+    self._behaviors_without_token = [WallFollower(self), FindWall(self)]
+    self._behaviors_with_token = [StepOntoToken(self), CaptureToken(self), MoveTowardsToken(self), WallFollower(self), FindWall(self)]
+    
+    # Publisher
+    self._movement_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+  def determine_behavior_set(self) -> None:
+    if IGNORE_TOKEN_INITIALLY and not self.map_saved:
+      self._behaviors = self._behaviors_without_token
+      rospy.logdebug('Current behavior set: w/o tokens')
+    else:
+      self._behaviors = self._behaviors_with_token
+      rospy.logdebug('Current behavior set: w/ tokens')
+    pass
 
   def keep_movin(self):
     while not rospy.is_shutdown() and NUM_TOKENS > len(self.tokens):
+      self.determine_behavior_set()
+
       for b in self._behaviors:
         if b.isApplicable():
           b.execute()

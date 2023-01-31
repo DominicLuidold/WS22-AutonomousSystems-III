@@ -1,12 +1,12 @@
 <launch>
     <!-- Optional arguments -->
     <arg name="debug" default="false" doc="show debug messages if `true`" />
-    <arg name="ignore_token" default="false" doc="ignore token if `true`" />
+    <arg name="ignore_tokens_initially" doc="ignore token in first run (= map saving run) if `true`" />
     <arg name="num_tokens" doc="tell how many tokens are present in the map" />
 
     <!-- Parameters -->
     <param name="debug" type="bool" value="$(arg debug)" />
-    <param name="ignore_token" type="bool" value="$(arg ignore_token)" />
+    <param name="ignore_tokens_initially" type="bool" value="$(arg ignore_tokens_initially)" />
     <param name="num_tokens" type="int" value="$(arg num_tokens)" />
 
     <!-- Start token detection -->
