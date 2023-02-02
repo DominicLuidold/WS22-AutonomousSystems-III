@@ -14,4 +14,5 @@
 
     <!-- Nodes token_detector depends on -->
     <include file="$(find turtlebot3_slam)/launch/turtlebot3_slam.launch"/>
+    <include file="$(find current_pos)/launch/launch_transformer.launch"/>
 </launch>

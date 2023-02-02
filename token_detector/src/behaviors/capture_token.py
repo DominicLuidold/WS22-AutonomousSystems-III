@@ -22,6 +22,7 @@ class CaptureToken:
     """ register coordinates and move on """
     pos = rospy.wait_for_message("pose_tf", PoseTF)
     listobj = []
+    self._killerroboter.tokens.append((self._tagno, pos.mapPose.x, pos.mapPose.y, pos.mapPose.angle))
 
     #get position
     dictionary = {
