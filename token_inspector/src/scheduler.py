@@ -41,8 +41,11 @@ class Scheduler:
 
         rospy.loginfo('Look for shortest A* path')
         token_distances = [] #(token, distance)
-        for pos in self._tokenpositions:
-            rospy.loginfo('Ask for distance to token')
+        for token in self._tokenpositions.keys():
+            if self._tokenpositions[token]['found'] == False:
+                rospy.loginfo('Ask for distance to token: %s'%token)
+
+                #TODO: Add communication with A*, tokendistances.append(token, distance)
 
 
         #Order token_distances by distances
@@ -55,6 +58,7 @@ class Scheduler:
                 rospy.loginfo('Ask GlobalScheduler if tag is ok')
                 for token in token_distances:
                     rospy.loginfo('Ask for tag: %s'%token[0])
+                    #TODO: Add global Scheduler
             else:
                 rospy.loginfo('Get first from ordered token_distances')
                 goal_token = token_distances[0]
