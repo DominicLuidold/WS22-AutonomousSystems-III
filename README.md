@@ -374,3 +374,14 @@ Parameters can be changed via:
 rosrun rqt_reconfigure rqt_reconfigure
 ```
 Manual is in shared OneDrive folder or accessible via http://www.zkytony.com/documents/navguide.pdf 
+
+#### Solution for not driving to target:
+``` 
+cd /opt/ros/noetic/share/turtlebot3_navigation/param
+sudo nano costmap_common_params_burger.yaml
+
+edit> footprint: [[-0.087, -0.057], [-0.087, 0.057], [0.025, 0.092], [0.025, -0.092]]
+
+edit> inflation_radius: 0.05
+```
+

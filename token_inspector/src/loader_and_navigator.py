@@ -1,5 +1,5 @@
 import rospy
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, PointStamped
 from sensor_msgs.msg import LaserScan
 from move_base_msgs.msg import MoveBaseGoal, MoveBaseAction
 from nav_msgs.msg import MapMetaData, OccupancyGrid, Odometry
@@ -35,6 +35,7 @@ class NavigationScheduler:
 
         self._mapFrame = "map"
         self._robotFrame = "base_footprint"
+        self._tfListener = tf.TransformListener()
 
         self._mapInfo = MapMetaData()
         self._mapInfo = rospy.wait_for_message("map", OccupancyGrid).info
@@ -42,9 +43,11 @@ class NavigationScheduler:
         self._move_base_client = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
 
         for pos in tokenpositions:
-            odomPose = self.calculateOdom(pos)
-            self._tokenpositions[pos["name"]] = odomPose
+            #point = self.calculateOdom(pos)
+            #self._tokenpositions[pos["name"]] = [point.x, point.y, point.z]
+            self._tokenpositions[pos["name"]] = [pos["map_position"]["x"], pos["map_position"]["y"], 0.0]
 
+        rospy.logdebug("Transformed Positions!")
         rospy.logdebug(str(self._tokenpositions))
         #Calculate closest token
         #for each self._tokenpositions
@@ -60,11 +63,27 @@ class NavigationScheduler:
     def calculateOdom(self, mapPose):
         rospy.logdebug("Calculating odom")
         rospy.logdebug(str(self._mapInfo))
+
+        #atTime = self._tfListener.getLatestCommonTime(self._robotFrame, self._mapFrame)
+        #pos, quad = self._tfListener.lookupTransform(self._robotFrame, self._mapFrame,atTime)
+
         resolution = self._mapInfo.resolution
         x = (mapPose["map_position"]["x"] * resolution) + self._mapInfo.origin.position.x # is this the offset?
-        y = (mapPose["map_position"]["x"] * resolution) + self._mapInfo.origin.position.y
+        y = (mapPose["map_position"]["y"] * resolution) + self._mapInfo.origin.position.y
         z = 0.0
-        return [x,y,z], [0.0,0.0,0.0,-1.0]
+
+        pointMap = PointStamped()
+        point = Point(x,y,z)
+        pointMap.point = point
+        pointMap.header.stamp = rospy.Time.now()
+        pointMap.header.seq = 0
+        pointMap.header.frame_id = self._robotFrame
+        
+
+        pointBot = self._tfListener.transformPoint(self._robotFrame, pointMap)
+        rospy.logdebug(pointBot)
+
+        return pointBot.point
 
     def calculateDistance(self, pos):
         odomPos = rospy.wait_for_message("odom", Odometry).pose.pose
@@ -73,11 +92,12 @@ class NavigationScheduler:
 
     def driveToPosition(self, pos):
         rospy.logdebug("Drive to Position")
-        target_pose = Pose(Point(pos[0][0],pos[0][1],pos[0][2]), Quaternion(0.0,0.0,0.0,-1.0))
+        rospy.logdebug(pos)
+        target_pose = Pose(Point(pos[0],pos[1],pos[2]), Quaternion(0.0,0.0,0.0,-1.0))
         rospy.logdebug(str(target_pose))
         
         target = PoseStamped()
-        target.header.frame_id = "base_link"
+        target.header.frame_id = "map"
         #target.target_pose.header.frame_id = "map"
         target.pose = target_pose
 

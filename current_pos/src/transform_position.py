@@ -39,11 +39,11 @@ class PoseConversions:
         try:
             atTimeStamp = self.tfListener.getLatestCommonTime(self.mapFrame, self.robotFrame)
             pos, quad = self.tfListener.lookupTransform(self.mapFrame, self.robotFrame, atTimeStamp)
-
+        
             resolution = self.mapInfo.resolution
             mapPose = PoseInMap()
-            mapPose.x = (pos[0] - self.mapInfo.origin.position.x) / resolution
-            mapPose.y = (pos[1] - self.mapInfo.origin.position.y) / resolution
+            mapPose.x = pos[0] #(pos[0] - self.mapInfo.origin.position.x) / resolution
+            mapPose.y = pos[1] #(pos[1] - self.mapInfo.origin.position.y) / resolution
             mapPose.angle = tf.transformations.euler_from_quaternion(quad)[2]
 
             msg = PoseTF()

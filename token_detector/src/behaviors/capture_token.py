@@ -26,6 +26,7 @@ class CaptureToken:
     #get position
     dictionary = {
       "name": self._tagno,
+      "found": False,
       "map_position": {
         "x": pos.mapPose.x,
         "y": pos.mapPose.y,
