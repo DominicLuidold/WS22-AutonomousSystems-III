@@ -21,9 +21,6 @@ class WallFollower:
   """ Follow wall on the left side """
   
   def __init__(self, killerrobot) -> None:
-    # Init
-    rospy.loginfo("WallFollower behavior initialized!")
-
     self.__killerrobot = killerrobot
     self._behaviors = [CompleteRoundtrip(), TurnTowardsWall(), FollowWall()]
     self._scan = None
@@ -43,7 +40,7 @@ class WallFollower:
     # Check only as long as it is initially in the starting area
     if not self._started:
       self._started = not isNearStart(data.pose.pose.position.x, data.pose.pose.position.y, MAX_TARGET_DISTANCE + 0.05)
-      rospy.loginfo("Leaving start area...")
+      #rospy.logdebug("Leaving start area...")
 
   def isApplicable(self) -> bool:
     """ if wall is somewhere at front """

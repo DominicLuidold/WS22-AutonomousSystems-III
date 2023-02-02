@@ -12,12 +12,13 @@ class RaspicamDetector:
     rospy.Subscriber("/raspicam_node/image/compressed", CompressedImage, self.detect_token)
     rospy.Subscriber("/camera/rgb/image_raw", Image, self.detect_simulated_token)
     self.tokens = [] # [x,y,y-distance[%],angle[rad]]
-    self.__bridge = CvBridge()
+    self._bridge = CvBridge()
 
 
-  def detect_token(self,data):
+  def detect_token(self, data):
+    """ detect tokens from raspicam image """
     try:
-      cv_image_bgr = self.__bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+      cv_image_bgr = self._bridge.compressed_imgmsg_to_cv2(data, "bgr8")
       self.raspicam_base = np.array([cv_image_bgr.shape[1]//2, cv_image_bgr.shape[0]])
       mask = self.get_token_mask(cv_image_bgr)
       mask = self.remove_noise(mask)
@@ -31,8 +32,9 @@ class RaspicamDetector:
       print(e)
 
   def detect_simulated_token(self, data):
+    """ detect tokens from simulated world in gazebo """
     try:
-      cv_image_bgr = self.__bridge.imgmsg_to_cv2(data, "bgr8")
+      cv_image_bgr = self._bridge.imgmsg_to_cv2(data, "bgr8")
       self.raspicam_base = np.array([cv_image_bgr.shape[1]//2, cv_image_bgr.shape[0]])
       mask = self.get_token_mask(cv_image_bgr)
       mask = self.remove_noise(mask)

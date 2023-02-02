@@ -9,6 +9,7 @@ class FindWall:
   def __init__(self, killerrobot) -> None:
     rospy.Subscriber('scan', LaserScan, self.__process_scan)
     rospy.Subscriber('odom', Odometry, self.__process_odom)
+    self._killerrobot = killerrobot
 
   def __process_scan(self, data: LaserScan) -> None:
     self._scan = data
@@ -26,4 +27,4 @@ class FindWall:
     first, turn left 
     """
     rospy.loginfo('behavior: find_wall')
-    pass
+    self._killerrobot.move(0.1, 0.1)
