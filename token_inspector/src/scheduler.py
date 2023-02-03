@@ -42,7 +42,7 @@ class Scheduler:
         rospy.loginfo('Look for shortest A* path')
         token_distances = [] #(token, distance)
         for token in self._tokenpositions.keys():
-            if self._tokenpositions[token]['found'] == False:
+            if not self._tokenpositions[token]['found']:
                 rospy.loginfo('Ask for distance to token: %s'%token)
 
                 #TODO: Add communication with A*, tokendistances.append(token, distance)
