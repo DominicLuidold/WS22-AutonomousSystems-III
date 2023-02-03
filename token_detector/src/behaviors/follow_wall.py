@@ -50,7 +50,6 @@ class WallFollower:
     return False
 
   def execute(self) -> None:
-    rospy.logwarn('behavior: follow wall')
     for b in self._behaviors:
       if b.isApplicable(self.dist, self._odom, self._started, self._killerrobot):
         b.execute(self.dist, self.publish_move, self._killerrobot)
@@ -73,15 +72,14 @@ class CompleteRoundtrip:
           else:
             if NUM_TOKENS <= len(killerrobot.tokens):
               return True
-
     return False
 
   def execute(self, distances, publish_move, killerrobot) -> None:
       if not killerrobot.map_saved:
         rospy.loginfo("Saving map!")
         os.system("rosrun map_server map_saver -f /killerrobot/saved-map")
-        killerrobot.map_saved = True
-      rospy.loginfo("Finished")
+        killerrobot.complete_initial_roundtrip()
+      rospy.loginfo("Finished initial roundtrip")
 
 class TurnTowardsWall:
   def isApplicable(self, dist, odom: Odometry, started: bool, killerrobot) -> bool:
@@ -92,11 +90,12 @@ class TurnTowardsWall:
     return dist['front'] > MAX_DETECTION_DIST and dist['front_left'] > MAX_DETECTION_DIST and dist['left'] <= MAX_DETECTION_DIST
 
   def execute(self, dist, publish_move, killerrobot) -> None:
+    rospy.logdebug('behavior: turn towards wall')
     angular_k = 1 # the further away, the sharper the turn
-    closeness_percent = (1 - (dist['left'] - MIN_DETECTION_DIST) / (MAX_DETECTION_DIST - MIN_DETECTION_DIST))
+    closeness_percent = max((1 - (dist['left'] - MIN_DETECTION_DIST) / (MAX_DETECTION_DIST - MIN_DETECTION_DIST)), 0.1)
     linear_velocity = MAX_SPEED * closeness_percent # the further away, the slower
     angular_velocity = closeness_percent
-    rospy.logdebug('turn linear {} angular {} sensors {}'.format(linear_velocity, angular_velocity, dist))
+    rospy.logdebug('turn linear {} angular {} closeness {} sensors {}'.format(linear_velocity, angular_velocity, closeness_percent, dist))
     publish_move(linear_velocity, angular_velocity) # turn left towards lost wall
 
 
@@ -110,6 +109,7 @@ class FollowWall:
     return any(distance < MAX_DETECTION_DIST for distance in dist.values())
 
   def execute(self, distance, publish_move, killerrobot) -> None:
+    rospy.logdebug('behavior: follow wall')
     linear_k = [1.5 * MAX_SPEED, 0, 0]
     angular_k = [-1, -0.4, 0.2]
     sensitivity_dist = [1.5 * MAX_DETECTION_DIST, MAX_DETECTION_DIST, MAX_DETECTION_DIST]
