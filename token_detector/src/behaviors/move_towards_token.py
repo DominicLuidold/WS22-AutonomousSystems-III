@@ -47,18 +47,21 @@ class MoveTowardsToken:
     linear velocity: the closer to the token, the slower
     angular velocity: angle of token or if it gets too close to the wall, drive along wall
     """
+    rospy.logerr('behavior: move_towards_token')
     clst_tkn = self._unrecognized_tokens[0]
     linear_velocity = 0.1 * clst_tkn[2] + 0.05
-    angular_velocity = clst_tkn[3] * 0.35    
-    clst_wall_front_left = filtered_min(self._ranges[30:60], self._range_min)
-    if clst_wall_front_left < MAX_DETECTION_DIST:
-      # order of sensors: front, front_left, left
-      dist = [filtered_min(self._ranges[:15] + self._ranges[-15:], self._range_min), filtered_min(self._ranges[30:60], self._range_min), filtered_min(self._ranges[75:105], self._range_min)]
+    angular_velocity = clst_tkn[3] * 0.35
+    distance = {'front': filtered_min(self._ranges[:15] + self._ranges[-15:], self._range_min), \
+                'front_left': filtered_min(self._ranges[30:60], self._range_min), \
+                'left': filtered_min(self._ranges[75:105], self._range_min),
+                'left_behind': filtered_min(self._ranges[105:135], self._range_min)}
+    if distance['front_left'] < MAX_DETECTION_DIST and distance['front_left'] < distance['left_behind']:
       max_speed = self._killerrobot.max_speed
       linear_k = [1.5 * max_speed, 0, 0]
-      angular_k = [-1, -0.3, 0.2]
+      angular_k = [-1, -0.4, 0.2]
       sensitivity_dist = [1.5 * MAX_DETECTION_DIST, MAX_DETECTION_DIST, MAX_DETECTION_DIST]
       angular_velocity = 0
+      dist = [distance['front'], distance['front_left'], distance['left']]
       for i in range(3):
         if dist[i] <= sensitivity_dist[i]:
           linear_velocity -= linear_k[i] * (1 - (dist[i] - MIN_DETECTION_DIST) / (sensitivity_dist[i] - MIN_DETECTION_DIST))
@@ -95,7 +98,6 @@ class MoveTowardsToken:
     new_x = self._pose.x + grid_point['x'] * math.cos(self._pose.angle) + grid_point['y'] * math.cos(math.pi / 2 + self._pose.angle)
     new_y = self._pose.y + grid_point['x'] * math.sin(self._pose.angle) + grid_point['y'] * math.sin(math.pi / 2 + self._pose.angle)
     return {'x': new_x, 'y': new_y }
-
 
 
   def any_registered_token_within_distance(self, estimated_token_map_pose, distance_threshold):
