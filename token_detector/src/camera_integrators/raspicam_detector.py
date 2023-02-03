@@ -25,7 +25,7 @@ class RaspicamDetector:
       contours, _ = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
       if contours:
         self.tokens = self.calculate_all_token_centers(contours)
-        #self.print_contours(mask, contours)
+        #self.print_contours(mask, contours, cv_image_bgr)
       else:
         self.tokens = []
     except CvBridgeError as e:
@@ -106,7 +106,7 @@ class RaspicamDetector:
     return tokens
 
 
-  def print_contours(self, mask, contours):
+  def print_contours(self, mask, contours, image):
     """ helper to show mask with detected tokens and their centers """
     if contours:
       img = cv.cvtColor(mask, cv.COLOR_GRAY2BGR)
@@ -116,6 +116,6 @@ class RaspicamDetector:
         center = self.calculate_token_center(hull)
         cv.circle(img, (center[0], center[1]), 10, (0,0,255), -1)
         hulls.append(hull)
-      img = cv.drawContours(img, hulls, -1, (0,255,0), 3)
-      cv.imshow('m', img)
+      image = cv.drawContours(image, hulls, -1, (0,255,0), 3)
+      cv.imshow('m', image)
       cv.waitKey(3)
