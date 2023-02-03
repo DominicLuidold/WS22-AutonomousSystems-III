@@ -14,30 +14,30 @@ class PoseConversions:
         log_level = rospy.DEBUG if DEBUG else rospy.INFO
         rospy.init_node('robot2map_conversion', anonymous=True, log_level=log_level)
         rospy.loginfo("PoseConversions: Startup")
-        self.mapFrame = "map"
-        self.robotFrame = "base_footprint"
-        self.mapInfo = MapMetaData()
-        self.mapInfo = rospy.wait_for_message("map", OccupancyGrid).info
-        self.tfListener = tf.TransformListener()
-        self.pubPoseInMap = rospy.Publisher("pose_tf", PoseTF, queue_size=10)
-        self.subRobotPose = rospy.Subscriber('odom', Odometry, self._subNextPose)
-        self.rate = rospy.Rate(2)
+        self._mapFrame = "map"
+        self._robotFrame = "base_footprint"
+        self._mapInfo = MapMetaData()
+        self._mapInfo = rospy.wait_for_message("map", OccupancyGrid).info
+        self._tfListener = tf.TransformListener()
+        self._pubPoseInMap = rospy.Publisher("pose_tf", PoseTF, queue_size=10)
+        self._subRobotPose = rospy.Subscriber('odom', Odometry, self.sub_next_pose)
+        self._rate = rospy.Rate(2)
         rospy.spin()
 
 
-    def _subNextPose(self, odom):
+    def sub_next_pose(self, odom):
         """
         Callback of pose subscriber.
         Converts the current position of the robot in the map.
         """
         try:
-            atTimeStamp = self.tfListener.getLatestCommonTime(self.mapFrame, self.robotFrame)
-            pos, quad = self.tfListener.lookupTransform(self.mapFrame, self.robotFrame, atTimeStamp)
+            atTimeStamp = self._tfListener.getLatestCommonTime(self._mapFrame, self._robotFrame)
+            pos, quad = self._tfListener.lookupTransform(self._mapFrame, self._robotFrame, atTimeStamp)
         
-            resolution = self.mapInfo.resolution
+            #resolution = self._mapInfo.resolution
             mapPose = PoseInMap()
-            mapPose.x = pos[0] #(pos[0] - self.mapInfo.origin.position.x) / resolution
-            mapPose.y = pos[1] #(pos[1] - self.mapInfo.origin.position.y) / resolution
+            mapPose.x = pos[0] #(pos[0] - self._mapInfo.origin.position.x) / resolution
+            mapPose.y = pos[1] #(pos[1] - self._mapInfo.origin.position.y) / resolution
             mapPose.angle = tf.transformations.euler_from_quaternion(quad)[2]
 
             msg = PoseTF()
@@ -45,7 +45,7 @@ class PoseConversions:
             msg.header.stamp = rospy.Time.now()
             msg.originalPose = odom.pose.pose
             msg.mapPose = mapPose
-            self.pubPoseInMap.publish(msg)
+            self._pubPoseInMap.publish(msg)
             rospy.logdebug("PoseConversions: Next Pose -> {}".format(mapPose))
         except tf.Exception:
             rospy.logwarn("PoseConversions: Transform between /odom and /map is not ready")
