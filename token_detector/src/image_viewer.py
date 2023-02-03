@@ -17,15 +17,17 @@ class image_viewer:
     self.image_sub2 = rospy.Subscriber("/camera/rgb/image_raw", Image, self.simulated_callback)
     self._raspicam_detector = RaspicamDetector()
 
+
   def callback(self,data):
     try:
-      #cv_image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
-      #cv2.imshow("Image window", cv_image)
-      #cv2.waitKey(3)
+      cv_image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
+      cv2.imshow("Image window", cv_image)
+      cv2.waitKey(3)
       pass
     except CvBridgeError as e:
       print(e)
   
+
   def simulated_callback(self,data):
     try:
       cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")

@@ -6,27 +6,21 @@ from nav_msgs.msg import Odometry, OccupancyGrid, MapMetaData
 from std_msgs.msg import Header
 from current_pos.msg import PoseInMap, PoseTF
 
+DEBUG = rospy.get_param('debug')
 
 class PoseConversions:
 
     def __init__(self):
-        rospy.init_node('robot2map_conversion', log_level=rospy.DEBUG, anonymous=True)
+        log_level = rospy.DEBUG if DEBUG else rospy.INFO
+        rospy.init_node('robot2map_conversion', anonymous=True, log_level=log_level)
         rospy.loginfo("PoseConversions: Startup")
-
         self.mapFrame = "map"
         self.robotFrame = "base_footprint"
-
         self.mapInfo = MapMetaData()
         self.mapInfo = rospy.wait_for_message("map", OccupancyGrid).info
-
         self.tfListener = tf.TransformListener()
-
         self.pubPoseInMap = rospy.Publisher("pose_tf", PoseTF, queue_size=10)
-
         self.subRobotPose = rospy.Subscriber('odom', Odometry, self._subNextPose)
-
-
-
         self.rate = rospy.Rate(2)
         rospy.spin()
 
@@ -55,8 +49,6 @@ class PoseConversions:
             rospy.logdebug("PoseConversions: Next Pose -> {}".format(mapPose))
         except tf.Exception:
             rospy.logwarn("PoseConversions: Transform between /odom and /map is not ready")
-
-
 
 
 def main():
