@@ -166,6 +166,8 @@ include_directories(
    src/loader_and_navigator.py
    src/runner.py
    src/scheduler.py
+   src/a_star.py
+   src/display_tokens.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

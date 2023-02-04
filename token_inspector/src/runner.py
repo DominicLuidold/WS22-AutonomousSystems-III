@@ -3,9 +3,10 @@ import queue
 import tf
 import math
 from token_inspector.srv import GimmeGoal
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Twist
 
 MAX_TOKEN_DISTANCE = 0.05
+FORWARD_SPEED = 0.22
 
 class Runner:
     def __init__(self):
@@ -26,6 +27,8 @@ class Runner:
         #init listener publisher and subscriber
         self._tfListener = tf.TransformListener()
 
+        self._movementPublisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
     def run(self):
         while not rospy.is_shutdown() or self._isFinished:
             #Get goal
@@ -42,9 +45,8 @@ class Runner:
                     self._reachedGoal = True
 
     def drive_towards_target(self, target: Point): #target is of type Point
-        while not self.is_robot_on_target(target):
-            self.turn_towards_target(target)
-            self.drive_straight_to_target(target)
+        self.turn_towards_target(target)
+        self.drive_straight_to_target(target)
 
     def is_robot_on_target(self, target: Point):
         try:
@@ -52,7 +54,7 @@ class Runner:
             pos, quad = self._tfListener.lookupTransform(self._mapFrame, self._robotFrame, atTimeStamp)
             currDistanceFromTaget = self.euklidean_distance(pos, target)
 
-            if currDistanceFromTaget > MAX_TOKEN_DISTANCE:
+            if currDistanceFromTaget < MAX_TOKEN_DISTANCE:
                 return True
         except tf.Exception:
             rospy.logwarn("PoseConversions: Transform between /odom and /map is not ready")
@@ -66,10 +68,14 @@ class Runner:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def turn_towards_target(self, target):
+        
         return
 
     def drive_straight_to_target(self, target):
-        return
+        while not self.is_robot_on_target(target):
+            move = Twist()
+            move.linear.x = FORWARD_SPEED 
+            self._movementPublisher.publish(move)
 
     def get_goal(self):
         rospy.loginfo('Get Goal')

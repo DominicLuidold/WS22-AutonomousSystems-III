@@ -14,7 +14,7 @@ class Scheduler:
     def __init__(self):
         rospy.init_node('scheduler_server', log_level=rospy.DEBUG, anonymous=True)
         rospy.loginfo('Init Scheduler Server')
-        self._giveGoalsService = ('give_goals_service', GimmeGoals, self.handle_goal_scheduling)
+        self._giveGoalsService = rospy.Service('give_goals_service', GimmeGoals, self.handle_goal_scheduling)
         self._currentTag = -1
         self._tokenpositions = {}
 
