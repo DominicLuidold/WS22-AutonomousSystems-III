@@ -63,7 +63,7 @@ class RaspicamDetector:
 
 
   def remove_noise(self, mask):
-    kernel = cv.getStructuringElement(cv.MORPH_RECT,(5,5))
+    kernel = cv.getStructuringElement(cv.MORPH_RECT,(2,2))
     opened = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
     closed = cv.morphologyEx(opened, cv.MORPH_CLOSE, kernel)
     return closed

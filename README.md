@@ -1,3 +1,13 @@
+# Behavior
+## Mapping and Detection Phase
+
+### Raspicam Configuration
+Due to overheating and massive delays, the raspicam resolution needed to be reduced massively from initially 1280x960 to 410x308. Tweaking the token detection accuracy with ```rosrun rqt_reconfigure rqt_reconfigure``` we found that it works best, if saturation property is upped to 80 in the camerav2_custom.launch file:
+```
+<param name="saturation" value="80"/>
+```
+
+
 # Configuration
 
 |Purpose | File/Program | Action|

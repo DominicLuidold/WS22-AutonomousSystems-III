@@ -47,22 +47,36 @@ class MoveTowardsToken:
     clst_tkn = self._unrecognized_tokens[0]
     linear_velocity = 0.1 * clst_tkn[2] + 0.05
     angular_velocity = clst_tkn[3] * 0.35
-    distance = {'front': filtered_min(self._ranges[:15] + self._ranges[-15:], self._range_min), \
-                'front_left': filtered_min(self._ranges[30:60], self._range_min), \
+    distance = {'front': filtered_min(self._ranges[:15] + self._ranges[-15:], self._range_min),
+                'front_left': filtered_min(self._ranges[30:60], self._range_min),
                 'left': filtered_min(self._ranges[75:105], self._range_min),
-                'left_behind': filtered_min(self._ranges[105:135], self._range_min)}
+                'left_behind': filtered_min(self._ranges[105:135], self._range_min),
+                'front_right': filtered_min(self._ranges[-60:-30], self._range_min),
+                'right': filtered_min(self._ranges[-105:-75], self._range_min),
+                'right_behind': filtered_min(self._ranges[-135:-105], self._range_min)}
     if distance['front_left'] < MAX_DETECTION_DIST and distance['front_left'] < distance['left_behind']:
-      max_speed = self._killerrobot.max_speed
-      linear_k = [1.5 * max_speed, 0, 0]
+      rospy.logwarn('correct left')
       angular_k = [-1, -0.4, 0.2]
-      sensitivity_dist = [1.5 * MAX_DETECTION_DIST, MAX_DETECTION_DIST, MAX_DETECTION_DIST]
-      angular_velocity = 0
       dist = [distance['front'], distance['front_left'], distance['left']]
-      for i in range(3):
-        if dist[i] <= sensitivity_dist[i]:
-          linear_velocity -= linear_k[i] * (1 - (dist[i] - MIN_DETECTION_DIST) / (sensitivity_dist[i] - MIN_DETECTION_DIST))
-          angular_velocity += angular_k[i] * (1 - (dist[i] - MIN_DETECTION_DIST) / (sensitivity_dist[i] - MIN_DETECTION_DIST))
+      linear_velocity, angular_velocity = self.calc_wall_movement(angular_k, dist, linear_velocity)
+    elif distance['front_right'] < MAX_DETECTION_DIST and distance['front_right'] < distance['right_behind']:
+      rospy.logwarn('correct right')
+      angular_k = [1, 0.4, -0.2]
+      dist = [distance['front'], distance['front_right'], distance['right']]
+      linear_velocity, angular_velocity = self.calc_wall_movement(angular_k, dist, linear_velocity)
+    rospy.logerr(f'lin {linear_velocity}, ang {angular_velocity}')
     self._killerrobot.move(linear_velocity, angular_velocity)
+
+  def calc_wall_movement(self, angular_k, dist, linear_velocity):
+    max_speed = self._killerrobot.max_speed
+    linear_k = [1.5 * max_speed, 0, 0]
+    sensitivity_dist = [1.5 * MAX_DETECTION_DIST, MAX_DETECTION_DIST, MAX_DETECTION_DIST]
+    angular_velocity = 0
+    for i in range(3):
+      if dist[i] <= sensitivity_dist[i]:
+        linear_velocity -= linear_k[i] * (1 - (dist[i] - MIN_DETECTION_DIST) / (sensitivity_dist[i] - MIN_DETECTION_DIST))
+        angular_velocity += angular_k[i] * (1 - (dist[i] - MIN_DETECTION_DIST) / (sensitivity_dist[i] - MIN_DETECTION_DIST))
+    return linear_velocity, angular_velocity
 
 
   def filter_unrecognized_tokens(self):
