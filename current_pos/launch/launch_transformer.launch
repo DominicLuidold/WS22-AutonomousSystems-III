@@ -1,3 +1,6 @@
 <launch>
+    <arg name="debug" default="true" doc="show debug messages if `true`" />
+    <param name="debug" type="bool" value="$(arg debug)" />
+
     <node pkg="current_pos" type="transform_position.py" name="transform_position" output="screen" />
 </launch>

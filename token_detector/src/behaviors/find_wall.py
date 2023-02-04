@@ -26,5 +26,5 @@ class FindWall:
     move towards point in wall where follower was exited.
     first, turn left 
     """
-    rospy.loginfo('behavior: find_wall')
+    rospy.logdebug('behavior: find_wall')
     self._killerrobot.move(0.1, 0.1)
