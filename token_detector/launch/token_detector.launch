@@ -1,12 +1,12 @@
 <launch>
     <!-- Optional arguments -->
     <arg name="debug" default="false" doc="show debug messages if `true`" />
-    <arg name="ignore_tokens_initially" doc="ignore token in first run (= map saving run) if `true`" />
+    <arg name="skip_roundtrip" default="false" doc="skip the initial roundtrip where tokens are ignored" />
     <arg name="num_tokens" doc="tell how many tokens are present in the map" />
 
     <!-- Parameters -->
     <param name="debug" type="bool" value="$(arg debug)" />
-    <param name="ignore_tokens_initially" type="bool" value="$(arg ignore_tokens_initially)" />
+    <param name="skip_roundtrip" type="bool" value="$(arg skip_roundtrip)" />
     <param name="num_tokens" type="int" value="$(arg num_tokens)" />
 
     <!-- Start token detection -->

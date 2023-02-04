@@ -16,7 +16,7 @@ from current_pos.msg import PoseTF
 
 # Launch arguments
 DEBUG = rospy.get_param('debug')
-IGNORE_TOKEN_INITIALLY = rospy.get_param('ignore_tokens_initially')
+SKIP_ROUNDTRIP = rospy.get_param('skip_roundtrip')
 NUM_TOKENS = rospy.get_param('num_tokens')
 
 class TokenDetector:
@@ -29,6 +29,8 @@ class TokenDetector:
     self._wall_follower = WallFollower(self)
     self._wall_finder = FindWall(self)
     self._behaviors = [self._wall_follower, self._wall_finder]
+    if SKIP_ROUNDTRIP:
+      self.complete_initial_roundtrip()
     self._movement_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     rospy.Subscriber('pose_tf', PoseTF, self._process_pose)
     rospy.on_shutdown(self.save_map)
