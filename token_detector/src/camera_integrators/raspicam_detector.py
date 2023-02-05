@@ -51,9 +51,9 @@ class RaspicamDetector:
   def get_token_mask(self, bgr_image):
     """ Build a mask that shows where tokens are (white=token) """
     hsv = cv.cvtColor(bgr_image, cv.COLOR_BGR2HSV)
-    token_color_lower_1 = np.array([0, 50, 100]) #red ranges from 345 to 15 halved by opencv -> 0-15 && 165-180
-    token_color_upper_1 = np.array([15, 255, 255])
-    token_color_lower_2 = np.array([165, 50, 100])
+    token_color_lower_1 = np.array([0, 70, 100]) #red ranges from 345 to 15 halved by opencv -> 0-15 && 165-180
+    token_color_upper_1 = np.array([8, 255, 255])
+    token_color_lower_2 = np.array([155, 70, 100])
     token_color_upper_2 = np.array([180, 255, 255])
     mask1 = cv.inRange(hsv, token_color_lower_1, token_color_upper_1)
     mask2 = cv.inRange(hsv, token_color_lower_2, token_color_upper_2)

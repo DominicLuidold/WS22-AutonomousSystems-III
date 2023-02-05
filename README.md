@@ -2,13 +2,20 @@
 ## Mapping and Detection Phase
 
 ### Raspicam Configuration
-Due to overheating and massive delays, the raspicam resolution needed to be reduced massively from initially 1280x960 to 410x308. Tweaking the token detection accuracy with ```rosrun rqt_reconfigure rqt_reconfigure``` we found that it works best, if saturation property is upped to 80 in the camerav2_custom.launch file:
+For customizing the camera configuration, two following two files are necessary:
+- ~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch
+- ~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml
+
+Both are originally copied from the camerav2_410x308 pendants and later adapted.
+
+Due to overheating and massive delays, the raspicam resolution needed to be reduced massively from initially planned 1280x960 to 410x308. Tweaking the token detection accuracy with ```rosrun rqt_reconfigure rqt_reconfigure``` we found that it works best, if saturation property is upped to 80 in the camerav2_custom.launch file:
 ```
 <param name="saturation" value="80"/>
 ```
 
 
-# Configuration
+
+# General ROS Configuration
 
 |Purpose | File/Program | Action|
 |---|---|---|
