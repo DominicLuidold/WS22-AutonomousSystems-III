@@ -87,7 +87,7 @@ class MoveTowardsToken:
       rospy.logdebug(f'closest point: {closest_point_in_grid}')
       estimated_token_map_pose = self.estimate_map_pose_with_angle(closest_point_in_grid)
       rospy.logdebug(f'estimated map pose: x {estimated_token_map_pose.x}, y {estimated_token_map_pose.y}, angle {estimated_token_map_pose.angle}')
-      if not any_registered_token_within_distance(estimated_token_map_pose, self._killerrobot.tokens, 0.18): # dist 1 = 1m
+      if not any_registered_token_within_distance(estimated_token_map_pose, self._killerrobot.tokens, 0.2): # dist 1 = 1m
         unrecognized_tokens.append(detected_token)
         rospy.logdebug(f'unrecognized token x {estimated_token_map_pose.x}, y {estimated_token_map_pose.y}')
       else:

@@ -55,14 +55,15 @@ class RoundtripMonitor:
     self._killerrobot = killerrobot
 
   def check_roundtrip(self, current_pose):
-    if not self._initial_pose: # set first wall contact point once on first call
-      self._initial_pose = current_pose
-      rospy.logdebug(f'initial pose {current_pose.x} {current_pose.y}')
-    if self._is_near_initial_pose(current_pose):
-      if self._ever_left_initial_area:
-        self._killerrobot.complete_initial_roundtrip()
-    else:
-      self._ever_left_initial_area = True # register when robot leaves the area of first wall contact point to find it later again
+    if current_pose:
+      if not self._initial_pose: # set first wall contact point once on first call
+        self._initial_pose = current_pose
+        rospy.logdebug(f'initial pose {current_pose.x} {current_pose.y}')
+      if self._is_near_initial_pose(current_pose):
+        if self._ever_left_initial_area:
+          self._killerrobot.complete_initial_roundtrip()
+      else:
+        self._ever_left_initial_area = True # register when robot leaves the area of first wall contact point to find it later again
 
   def _is_near_initial_pose(self, current_pose) -> bool:
     eucl_dist = math.sqrt((current_pose.x - self._initial_pose.x)**2 \
