@@ -1,7 +1,9 @@
 import rospy
+import queue
+import math
 import tf.transformations as tft
 from geometry_msgs.msg import Pose, PoseStamped
-from nav_msgs.srv import GetPlan
+from nav_msgs.srv import GetPlan, GetPlanResponse
 from nav_msgs.msg import Path
 from current_pos.msg import PoseTF
 
@@ -49,6 +51,40 @@ class Pathfinder:
         #use current_pos transform_position for receiving your position
         return rospy.wait_for_message('pose_tf', PoseTF)
 
+    #def handle_path_length(self, )
+
+    def calculate_path_length(self, path: Path):
+        length = 0.0        
+        posequeue = queue.Queue()
+        for posestamped in path.poses:
+            posequeue.put(posestamped.pose)
+
+        if posequeue.empty():
+            return 0.0
+        
+        prev_pose = posequeue.get()
+        
+        while not posequeue.empty():
+            curr_pose = posequeue.get()
+            
+            length += self.euklidean_distance(prev_pose, curr_pose)
+            prev_pose = curr_pose
+
+        return length
+
+    def euklidean_distance(self, start: Pose, target: Pose):
+        x1 = target.position.x
+        y1 = target.position.y
+        x2 = start.position.x
+        y2 = start.position.y
+        return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
+
+
+
+
+
+
+
     def test(self):
         rospy.loginfo('Test started')
         target = Pose()
@@ -57,6 +93,10 @@ class Pathfinder:
         target.orientation.w = 1.0
         resp = self.get_path_to_target(target)
         rospy.loginfo(resp)
+
+        distance = self.calculate_path_length(resp.plan)
+
+        rospy.loginfo('Distance to target is: %s'%distance)
 
 def main():
     try:
