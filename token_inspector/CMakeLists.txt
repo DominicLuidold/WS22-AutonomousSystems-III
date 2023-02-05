@@ -169,6 +169,7 @@ include_directories(
    src/a_star.py
    src/display_tokens.py
    src/send_goal.py
+   src/pathfinder.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

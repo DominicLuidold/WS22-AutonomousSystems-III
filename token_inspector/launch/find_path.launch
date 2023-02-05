@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="token_inspector" type="pathfinder.py" name="pathfinder" output="screen"></node>
+</launch>
