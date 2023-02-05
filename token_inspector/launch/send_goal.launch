@@ -1,0 +1,4 @@
+<launch>
+  <!-- Start the send_goal node -->
+  <node name="send_goal" pkg="token_inspector" type="send_goal.py" output="screen"/>
+</launch>
