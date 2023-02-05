@@ -38,7 +38,8 @@ class PoseConversions:
             mapPose = PoseInMap()
             mapPose.x = pos[0] #(pos[0] - self._mapInfo.origin.position.x) / resolution
             mapPose.y = pos[1] #(pos[1] - self._mapInfo.origin.position.y) / resolution
-            mapPose.angle = tf.transformations.euler_from_quaternion(quad)[2]
+            # 0 = yaw (rotation around the z axis)
+            mapPose.angle = tf.transformations.euler_from_quaternion(quad)[0]
 
             msg = PoseTF()
             msg.header.seq = 0
