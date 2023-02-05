@@ -114,7 +114,7 @@ class Runner:
     def get_goal(self):
         rospy.loginfo('Get Goal')
         try:
-            resp = self._gimme_goals(-4711 if self._currentToken == -1 else -1)
+            resp = self._gimmeGoals(-4711 if self._currentToken == -1 else -1)
             return resp.id, resp.x, resp.y
         except rospy.ServiceException as e:
             print('Service call failed: %s'%e)
