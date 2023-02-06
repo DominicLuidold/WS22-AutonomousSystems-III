@@ -2,17 +2,35 @@
 
 ## Architecture
 
-## Custom Modules
+### Custom Modules
 
-### `token_detector`
+#### `token_detector`
 
-### `current_pos`
+The `token_detector` package integrates all the necessary components to perform object detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth to identify the tokens and saving their positions within the map in a format compatible with other TurtleBot packages.
 
-#### Purpose
+The `token_detector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities.
 
-The `current_pos` package contains all the necessary files and logic to convert the TurtleBot's position, based on the Odometry data, to a position/to coordinates within the map's coordinate system.
+##### `image_viewer`
 
-#### Functional Principle
+###### Purpose
+
+The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` topics, converting themk to the OpenCV format and subsequently displaying them in a window.
+
+###### Usage
+
+The `image_viewer` node can be launched with running the following command on the TurtleBot:
+
+```console
+$ roslaunch token_detector image_viewer.launch
+```
+
+#### `current_pos`
+
+##### Purpose
+
+The `current_pos` package contains the necessary files and logic for converting the TurtleBot's position, as determined from Odometry data, to a coordinate representation within the map's coordinate system.
+
+##### Functional Principle
 
 The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
 
@@ -21,7 +39,7 @@ The converted pose is packaged into a custom `PoseInMap` message, which includes
 
 Both the `PoseInMap` and `PoseTF` messages are used in other packages related to the TurtleBot's functionality.
 
-#### Usage
+##### Usage
 
 The `robot2map_conversion` node can be launched with running the following command on the TurtleBot:
 
@@ -35,11 +53,11 @@ $ roslaunch current_pos launch_transformer.launch
 |--------------|---------|----------|----------|----------------------------------------------------------------------|
 | `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
 
-### `token_inspector`
+#### `token_inspector`
 
-### `amcl_loclization`
+#### `amcl_loclization`
 
-## Adapted Modules
+### Adapted Modules
 
 ## Getting Started
 
