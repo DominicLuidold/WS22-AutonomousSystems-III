@@ -4,7 +4,42 @@
 
 ## Custom Modules
 
-## Adaptes Modules
+### `token_detector`
+
+### `current_pos`
+
+#### Purpose
+
+The `current_pos` package contains all the necessary files and logic to convert the TurtleBot's position, based on the Odometry data, to a position/to coordinates within the map's coordinate system.
+
+#### Functional Principle
+
+The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
+
+The provided `lookupTransoform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an x and y coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `euler_from_quaternion` method).  
+The converted pose is packaged into a custom `PoseInMap` message, which includes the x and y position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
+
+Both the `PoseInMap` and `PoseTF` messages are used in other packages related to the TurtleBot's functionality.
+
+#### Usage
+
+The `robot2map_conversion` node can be launched with running the following command on the TurtleBot:
+
+```console
+$ roslaunch current_pos launch_transformer.launch
+```
+
+##### Parameters
+
+| Parameter    | Default | Format   | Required | Description                                                          |
+|--------------|---------|----------|----------|----------------------------------------------------------------------|
+| `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
+
+### `token_inspector`
+
+### `amcl_loclization`
+
+## Adapted Modules
 
 ## Getting Started
 
@@ -41,6 +76,10 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 2. Edit the `~/.bahsrc` file and set
     * `ROS_HOSTNAME` with value `<ip-address>`
     * `ROS_MASTER_URI` with value `http://<ip-addredd>:11311`
+3. Run
+    ```console
+    $ source ~/.bashrc
+    ```
 
 ##### TurtleBot
 1. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
@@ -49,6 +88,10 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 3. Edit the `~/.bahsrc` file and set
     * `ROS_HOSTNAME` with value `<turtlebot-ip-address>`
     * `ROS_MASTER_URI` with value `http://<remote-pc-ip-address>:11311`
+3. Run
+    ```console
+    $ source ~/.bashrc
+    ```
 
 Please also see the following image taken from `TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`:
 [![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
