@@ -19,8 +19,8 @@ class Pathfinder:
         rospy.wait_for_service('/move_base/make_plan')
         self._makePlan = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
         rospy.loginfo('Initialized service')
-
-        self.test()
+        rospy.spin()
+        #self.test()
 
     def get_path_to_target(self, target: Pose):
         rospy.loginfo('Initializing PoseStampeds')
@@ -53,17 +53,17 @@ class Pathfinder:
         return rospy.wait_for_message('pose_tf', PoseTF)
 
     def handle_path_length(self, req):
-        rospy.loginfo('Received request from %s: %s|%s'%req.id_token%req.x%req.y)
+        rospy.loginfo('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
 
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y
         target.orientation.w = 1.0
         resp = self.get_path_to_target(target)
-        rospy.loginfo(resp)
+        #rospy.loginfo(resp)
 
         distance = self.calculate_path_length(resp.plan)
-        rospy.loginfo('Distance to target %s is: %s'%req.id_token%distance)
+        rospy.loginfo('Pathfinder: Distance to target %i is: %f'%(req.id_token,distance))
         return distance
         
 
@@ -106,11 +106,11 @@ class Pathfinder:
         target.position.y = -0.535
         target.orientation.w = 1.0
         resp = self.get_path_to_target(target)
-        rospy.loginfo(resp)
+        #rospy.loginfo(resp)
 
         distance = self.calculate_path_length(resp.plan)
 
-        rospy.loginfo('Distance to target is: %s'%distance)
+        rospy.loginfo('Pathfinder: distance to target is: %s'%distance)
 
 def main():
     try:

@@ -160,7 +160,6 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
     src/update_initial_pose_estimate.py
-    src/localize.py
     src/localize_wall.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
