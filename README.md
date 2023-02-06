@@ -14,6 +14,20 @@ Due to overheating and massive delays, the raspicam resolution needed to be redu
 <param name="awb_mode" value="incandescent"/>
 ```
 
+## Localization and Navigation
+
+Amcl's covariance matrix describes the uncertainty across the 6 dimensions. We are only interested in the diagonal values as the values do not correlate at all. z, roll and pitch can not occur in our robot world, so this leaves only x, y and yaw (rotation around the z axis). The robot follows the wall until it is certain for all three values (value is below threshold)
+
+```
+[
+  [xx, xy, xz, xroll, xpitch, xyaw],
+  [yx, yy, yz, yroll, ypitch, yyaw],
+  [zx, zy, zz, zroll, zpitch, zyaw],
+  [rollx, rolly, rollz, rollroll, rollpitch, rollyaw],
+  [pitchx, pitchy, pitchz, pitchroll, pitchpitch, pitchyaw],
+  [yawx, yawy, yawz, yawroll, yawpitch, yawyaw]
+]
+```
 
 
 # General ROS Configuration

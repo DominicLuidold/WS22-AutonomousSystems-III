@@ -1,27 +1,41 @@
 import sys
 import rospy
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
 from helpers.helper import filtered_min
 from std_srvs.srv import Empty
 
-ELLIPSE_SIZE_THRESHOLD = 0.5
+POSE_UNCERTAINTY_THRESHOLD = 0.005
 
 class WallLocalizer:
+    """ Follow the wall until amcl localized the robot with a sufficient certainty """
+
     def __init__(self) -> None:
         rospy.wait_for_service('global_localization')
         self._global_localisation = rospy.ServiceProxy('global_localization', Empty)
+        rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._process_estimated_pose)
         self._wall_follower = WallFollower()
-        # get service for global localization
+        self._is_localized = False
+        self.pose = {'x': 0, 'y': 0, 'angle': 0}
+        
+
+    def _process_estimated_pose(self, estimated_pose):
+        point = estimated_pose.pose.pose.position
+        self.pose['x'] = point.x
+        self.pose['y'] = point.y
+        self.pose['angle'] = point.z
+        cov = estimated_pose.pose.covariance
+        xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
+        rospy.logwarn(xyyaw)
+        self._is_localized = all([certainty < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
+
 
     def localize(self):
         self._global_localisation()
-        while not rospy.is_shutdown() and self.calc_estimated_pose_ellipse() > ELLIPSE_SIZE_THRESHOLD:
+        while not rospy.is_shutdown() and not self._is_localized:
             self._wall_follower.follow()
             rospy.Rate(10).sleep()
-
-    def calc_estimated_pose_ellipse(self):
-        return 1
+        
 
 
 MAX_SPEED = 0.13
