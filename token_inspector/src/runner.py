@@ -3,7 +3,7 @@ import queue
 import tf
 import numpy as np
 import math
-from token_inspector.srv import GimmeGoal
+from token_inspector.srv import GimmeGoal, GimmePath
 from geometry_msgs.msg import Point, Twist
 from current_pos.msg import PoseTF, PoseInMap
 
@@ -20,6 +20,8 @@ class Runner:
         self._hasGoal = False
         rospy.wait_for_service('give_goals_service')
         self._gimmeGoals = rospy.ServiceProxy('give_goals_service', GimmeGoal)
+        rospy.wait_for_service('provide_path_service')
+        self._gimmePath = rospy.ServiceProxy('provide_path_service', GimmePath)
         self._currentToken = -1
         self._reachedGoal = False
         self._path = [] #[Point]
@@ -39,7 +41,7 @@ class Runner:
             self._currentToken, x, y = self.get_goal()
             self._reachedGoal = False
             rospy.loginfo('Drive to point: %s | %s'%x%y)
-            self._path = self.get_path(x,y)
+            self._path = self.get_path(self._currentToken, x, y)
 
             pointsqueue = queue.Queue(self._path)
             while not self._reachedGoal:
@@ -117,10 +119,15 @@ class Runner:
             resp = self._gimmeGoals(-4711 if self._currentToken == -1 else -1)
             return resp.id, resp.x, resp.y
         except rospy.ServiceException as e:
-            print('Service call failed: %s'%e)
+            rospy.logerr('Service call failed: %s'%e)
 
-    def get_path(self):
+    def get_path(self, id, x, y):
         rospy.loginfo('Get Path')
+        try:
+            resp = self._gimmePath(id, x, y)
+            return resp.path
+        except rospy.ServiceException as e:
+            rospy.logerr('Service call failed: %s'%e)
 
     def get_angle_difference(current_x, current_y, current_heading, target_x, target_y):
         '''
@@ -142,12 +149,21 @@ class Runner:
         # Return the angle difference
         return angle_difference
 
+    def test_path(self):
+        rospy.loginfo('Runner: started test for getting path')
+        id = 0
+        x = 0.1313
+        y = -0.67
+        path = self.get_path(id, x, y)
+        rospy.loginfo(str(path))
+        rospy.loginfo('Runner: received path')
 
 
 def main():
     try:
         node = Runner()
-        node.run()
+        node.test_path()
+        #node.run()
     except rospy.ROSInterruptException:
         pass
 

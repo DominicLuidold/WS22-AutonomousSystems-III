@@ -6,7 +6,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.srv import GetPlan, GetPlanResponse
 from nav_msgs.msg import Path
 from current_pos.msg import PoseTF
-from token_inspector.srv import GimmePathLength
+from token_inspector.srv import GimmePathLength, GimmePath
 
 TOLERANCE_TO_TARGET = 0.05
 
@@ -16,6 +16,7 @@ class Pathfinder:
         rospy.loginfo('Pathfinder initialized!')
 
         self._providePathLenghtService = rospy.Service('provide_path_length_service', GimmePathLength, self.handle_path_length)
+        self._providePathService = rospy.Service('provide_path_service', GimmePath, self.handle_path)
         rospy.wait_for_service('/move_base/make_plan')
         self._makePlan = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
         rospy.loginfo('Initialized service')
@@ -93,7 +94,16 @@ class Pathfinder:
         y2 = start.position.y
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
+    def handle_path(self,req):
+        rospy.loginfo('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        target = Pose()
+        target.position.x = req.x
+        target.position.y = req.y
+        target.orientation.w = 1.0
+        resp = self.get_path_to_target(target)
+        # TODO: adapt path to target for nicer driving here
 
+        return resp.plan
 
 
 

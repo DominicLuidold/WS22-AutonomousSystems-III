@@ -98,7 +98,7 @@ class Scheduler:
 def main():
     try:
         node = Scheduler()
-        node.test_path_length()
+        #node.test_path_length()
     except rospy.ROSInterruptException:
         pass
 

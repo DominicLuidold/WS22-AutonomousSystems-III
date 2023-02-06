@@ -1,0 +1,5 @@
+float64 id_token
+float64 x
+float64 y
+---
+nav_msgs/Path path
