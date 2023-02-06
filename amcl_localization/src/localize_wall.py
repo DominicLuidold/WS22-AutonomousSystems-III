@@ -1,11 +1,14 @@
 import sys
+import time
 import rospy
+import tf
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
 from helpers.helper import filtered_min
 from std_srvs.srv import Empty
 
 POSE_UNCERTAINTY_THRESHOLD = 0.005
+MIN_EXECUTION_TIME_SECS = 3 # follow wall at least for some seconds to avoid being finished immediately. The first estimate seems to be accurate often but is not
 
 class WallLocalizer:
     """ Follow the wall until amcl localized the robot with a sufficient certainty """
@@ -13,26 +16,43 @@ class WallLocalizer:
     def __init__(self) -> None:
         rospy.wait_for_service('global_localization')
         self._global_localisation = rospy.ServiceProxy('global_localization', Empty)
-        rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._process_estimated_pose)
+        rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._process_pose_estimation)
         self._wall_follower = WallFollower()
         self._is_localized = False
         self.pose = {'x': 0, 'y': 0, 'angle': 0}
-        
+        self.start_time = time.time()
+        self._timer = rospy.Timer(rospy.Duration(MIN_EXECUTION_TIME_SECS), self._execution_timer_callback)
+        self._execution_time_passed = False
 
-    def _process_estimated_pose(self, estimated_pose):
+
+    def _process_pose_estimation(self, estimated_pose):
+        """ Set the current estimate pose and check if localization uncertainty is below threshold """
         point = estimated_pose.pose.pose.position
         self.pose['x'] = point.x
         self.pose['y'] = point.y
-        self.pose['angle'] = point.z
-        cov = estimated_pose.pose.covariance
-        xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
-        rospy.logwarn(xyyaw)
-        self._is_localized = all([certainty < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
+        quaternion = estimated_pose.pose.pose.orientation
+        quaternion_array = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
+        self.pose['angle'] = tf.transformations.euler_from_quaternion(quaternion_array)[2]
+        if not self._is_localized:
+            cov = estimated_pose.pose.covariance
+            xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
+            rospy.logwarn(xyyaw)
+            self._is_localized = all([abs(certainty) < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
+            if self._is_localized: 
+                rospy.logerr('Localization complete!')
+
+
+    def _execution_timer_callback(self, event):
+        """ Make sure Wallfollower is executed at least x seconds """
+        if time.time() - self.start_time >= MIN_EXECUTION_TIME_SECS:
+            self._execution_time_passed = True
+            self._timer.shutdown()
+            rospy.logdebug(f'executed for {MIN_EXECUTION_TIME_SECS} seconds')
 
 
     def localize(self):
         self._global_localisation()
-        while not rospy.is_shutdown() and not self._is_localized:
+        while not rospy.is_shutdown() and not (self._is_localized and self._execution_time_passed) :
             self._wall_follower.follow()
             rospy.Rate(10).sleep()
         
@@ -86,6 +106,7 @@ class FindWall:
         return True
 
     def execute(self, dist, move) -> None:
+        rospy.logdebug('behavior: find wall')
         move(0.1, 0.1)
 
 
