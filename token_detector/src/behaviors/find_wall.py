@@ -8,14 +8,10 @@ class FindWall:
   
   def __init__(self, killerrobot) -> None:
     rospy.Subscriber('scan', LaserScan, self.__process_scan)
-    rospy.Subscriber('odom', Odometry, self.__process_odom)
     self._killerrobot = killerrobot
 
   def __process_scan(self, data: LaserScan) -> None:
     self._scan = data
-
-  def __process_odom(self, data: Odometry) -> None:
-    pass
 
   def isApplicable(self) -> bool:
     """ always """

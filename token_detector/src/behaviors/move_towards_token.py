@@ -64,7 +64,7 @@ class MoveTowardsToken:
       angular_k = [1, 0.4, -0.2]
       dist = [distance['front'], distance['front_right'], distance['right']]
       linear_velocity, angular_velocity = self.calc_wall_movement(angular_k, dist, linear_velocity)
-    rospy.logerr(f'lin {linear_velocity}, ang {angular_velocity}')
+    rospy.logdebug(f'lin {linear_velocity}, ang {angular_velocity}')
     self._killerrobot.move(linear_velocity, angular_velocity)
 
   def calc_wall_movement(self, angular_k, dist, linear_velocity):

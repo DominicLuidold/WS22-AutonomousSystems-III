@@ -114,7 +114,7 @@ def main() -> None:
         WallFollowerDegree()
         rospy.spin()
     except rospy.ROSInterruptException:
-        rospy.logerr('Shutting down!')
+        rospy.loginfo('Shutting down!')
 
 if __name__ == '__main__':
     main()
