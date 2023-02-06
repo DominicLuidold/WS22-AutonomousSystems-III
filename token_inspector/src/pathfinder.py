@@ -6,6 +6,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.srv import GetPlan, GetPlanResponse
 from nav_msgs.msg import Path
 from current_pos.msg import PoseTF
+from token_inspector.srv import GimmePathLength
 
 TOLERANCE_TO_TARGET = 0.05
 
@@ -14,7 +15,7 @@ class Pathfinder:
         rospy.init_node('pathfinder', log_level=rospy.DEBUG, anonymous=True)
         rospy.loginfo('Pathfinder initialized!')
 
-
+        self._providePathLenghtService = rospy.Service('provide_path_length_service', GimmePathLength, self.handle_path_length)
         rospy.wait_for_service('/move_base/make_plan')
         self._makePlan = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
         rospy.loginfo('Initialized service')
@@ -31,7 +32,7 @@ class Pathfinder:
         target_stamped = PoseStamped()
         target_stamped.pose = target
         target_stamped.header.frame_id = 'map'
-        rospy.loginfo('Get fucking plan')
+        rospy.loginfo('Get path')
 
         response = self._makePlan(start_stamped, target_stamped, TOLERANCE_TO_TARGET)
         rospy.loginfo('Received path')
@@ -51,7 +52,20 @@ class Pathfinder:
         #use current_pos transform_position for receiving your position
         return rospy.wait_for_message('pose_tf', PoseTF)
 
-    #def handle_path_length(self, )
+    def handle_path_length(self, req):
+        rospy.loginfo('Received request from %s: %s|%s'%req.id_token%req.x%req.y)
+
+        target = Pose()
+        target.position.x = req.x
+        target.position.y = req.y
+        target.orientation.w = 1.0
+        resp = self.get_path_to_target(target)
+        rospy.loginfo(resp)
+
+        distance = self.calculate_path_length(resp.plan)
+        rospy.loginfo('Distance to target %s is: %s'%req.id_token%distance)
+        return distance
+        
 
     def calculate_path_length(self, path: Path):
         length = 0.0        
@@ -101,7 +115,7 @@ class Pathfinder:
 def main():
     try:
         node = Pathfinder()
-        node.test()
+        #node.test()
     except rospy.ROSInterruptException:
         pass
 

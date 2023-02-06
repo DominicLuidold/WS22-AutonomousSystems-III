@@ -61,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    GimmeGoal.srv
+   GimmePathLength.srv
  )
 
 ## Generate actions in the 'action' folder

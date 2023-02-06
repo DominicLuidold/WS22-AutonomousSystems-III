@@ -2,7 +2,7 @@ import rospy
 import json
 from os import path
 from operator import itemgetter
-from token_inspector.srv import GimmeGoals, GimmeGoalsResponse
+from token_inspector.srv import GimmeGoal, GimmeGoalsResponse, GimmePathLength
 
 
 FINISHED = -1
@@ -14,7 +14,10 @@ class Scheduler:
     def __init__(self):
         rospy.init_node('scheduler_server', log_level=rospy.DEBUG, anonymous=True)
         rospy.loginfo('Init Scheduler Server')
-        self._giveGoalsService = rospy.Service('give_goals_service', GimmeGoals, self.handle_goal_scheduling)
+        self._giveGoalsService = rospy.Service('give_goals_service', GimmeGoal, self.handle_goal_scheduling)
+        
+        rospy.wait_for_service('provide_path_length_service')
+        self._gimmePathLength = rospy.ServiceProxy('provide_path_length_service', GimmePathLength)
         self._currentTag = -1
         self._tokenpositions = {}
 
@@ -29,7 +32,7 @@ class Scheduler:
         if len(tokenpositions) <= 0:
             rospy.logerr('The positions file is empty!')
         for pos in tokenpositions:
-            self._tokenpositions[pos['name']] = {'found': pos['found'], 'x': pos['map_position']['x'], 'y': pos['map_position']['y']}
+            self._tokenpositions[pos['name']] = {'name': pos['name'], 'found': pos['found'], 'x': pos['map_position']['x'], 'y': pos['map_position']['y']}
 
     def handle_goal_scheduling(self, req):
         rospy.loginfo('Received request: %s'%req.id_found)
@@ -42,8 +45,9 @@ class Scheduler:
         rospy.loginfo('Look for shortest A* path')
         token_distances = [] #(token, distance)
         for token in self._tokenpositions.keys():
-            if not self._tokenpositions[token]['found']:
+            if not self._tokenpositions[token['name']]['found']:
                 rospy.loginfo('Ask for distance to token: %s'%token)
+                token_distances.append(self.get_path_length(token))
 
                 #TODO: Add communication with A*, tokendistances.append(token, distance)
 
@@ -69,6 +73,16 @@ class Scheduler:
             rospy.loginfo('All Tokens have been seen')
             return GimmeGoalsResponse(-1, 0.0, 0.0)
 
+    def get_path_length(self, token):
+        rospy.loginfo('Get pathlength of token %s'%token['name'])
+        try:
+            resp = self._gimmePathLength(token['name'], token['x'], token['y'])
+            rospy.loginfo('Path length to token %s is: %s'%token['name']%resp.path_length)
+            return token['name'], resp.path_length
+        except rospy.ServiceException as e:
+            rospy.logerr('Service call failed: %s'%e)
+
+    def test_path_length(self)
 
 def main():
     try:
