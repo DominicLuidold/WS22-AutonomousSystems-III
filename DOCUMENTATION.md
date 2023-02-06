@@ -4,13 +4,13 @@
 
 ### Custom Modules
 
-#### `token_detector`
+#### `token_detector` package
 
 The `token_detector` package integrates all the necessary components to perform object detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth to identify the tokens and saving their positions within the map in a format compatible with other TurtleBot packages.
 
-The `token_detector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities.
+The `token_detector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
-##### `image_viewer`
+##### `image_viewer` node
 
 ###### Purpose
 
@@ -24,7 +24,42 @@ The `image_viewer` node can be launched with running the following command on th
 $ roslaunch token_detector image_viewer.launch
 ```
 
-#### `current_pos`
+##### `token_detector` node
+
+###### Purpose
+
+The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a format that can be easily reused.
+
+###### Functional Principle
+
+The `token_detector` node implements a reactive and behavior-based architecture, utilizing a subsumption architecture made up of multiple independent behaviors. This design enables the robot to efficiently explore its surroundings and gather tokens. The main node continuously determines which behavior is appropriate to execute based on the sensor data at any given time.
+
+The `token_detector` consists of the following five behaviors (ordered descending by priority):
+* `StepOntoToken`: The highest priority behavior responsible for stepping onto a detected token and claiming it.
+* `CaptureToken`: The behavior is responsible for detecting and capturing tokens in the labyrinth.
+* `MoveTowardsToken`: This behavior drives the robot towards a detected token.
+* `WallFollower`: The behavior is responsible for following the labyrinth walls on the left hand side.
+* `FindWall`: This behavior is responsible for finding a wall and orienting the robot towards it.
+
+The main node additionally contains logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  --> TODO <--
+
+###### Usage
+
+The `token_detector` node can be launched with running the following command on the TurtleBot:
+
+```console
+$ roslaunch token_detector token_detector.launch num_tokens:=<token-number>
+```
+
+###### Arguments
+
+| Argument         | Default | Format | Required | Description                                                 |
+|------------------|---------|--------|----------|-------------------------------------------------------------|
+| `debug`          | `false` | `bool` | No       | Show debug messages                                         |
+| `skip_roundtrip` | `false` | `bool` | No       | Skip the initial token-ignoring roundtrip, if set to `true` |
+| `num_tokens`     | N/A     | `int`  | Yes      | Number of tokens present in the labyrinth                   |
+
+#### `current_pos` package
 
 ##### Purpose
 
@@ -47,17 +82,23 @@ The `robot2map_conversion` node can be launched with running the following comma
 $ roslaunch current_pos launch_transformer.launch
 ```
 
-##### Parameters
+##### Arguments
 
-| Parameter    | Default | Format   | Required | Description                                                          |
+| Argument     | Default | Format   | Required | Description                                                          |
 |--------------|---------|----------|----------|----------------------------------------------------------------------|
 | `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
 
-#### `token_inspector`
+#### `token_inspector` package
 
-#### `amcl_loclization`
+TODO
+
+#### `amcl_loclization` package
+
+TODO
 
 ### Adapted Modules
+
+TODO - Adapted Modules?
 
 ## Getting Started
 
@@ -133,3 +174,7 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     ```
 
 Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
+
+### Using the TurtleBot
+
+TODO
