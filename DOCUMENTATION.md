@@ -6,7 +6,7 @@
 
 #### `token_detector` package
 
-The `token_detector` package integrates all the necessary components to perform object detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth to identify the tokens and saving their positions within the map in a format compatible with other TurtleBot packages.
+The `token_detector` package integrates all the necessary components to perform object detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in a format compatible with other custom TurtleBot packages.
 
 The `token_detector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
@@ -41,14 +41,71 @@ The `token_detector` consists of the following five behaviors (ordered descendin
 * `WallFollower`: The behavior is responsible for following the labyrinth walls on the left hand side.
 * `FindWall`: This behavior is responsible for finding a wall and orienting the robot towards it.
 
-The main node additionally contains logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  --> TODO <--
+<details>
+<summary><code>StepOntoToken</code> behavior description</summary>
+
+The `StepOntoToken` behavior relies on the PixyCam camera/sensor and allows the robot to move onto a token in the labyrinth. The script checks whether there is a registered token within a certain distance and if the PixyCam is detecting a token. If both conditions are met, the robot is moved towards the token at a slower speed.
+
+To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros).
+
+</details>
+
+<details>
+<summary><code>CaptureToken</code> behavior description</summary>
+
+Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [`current_pos` package](#current_pos-package)) message published on the `/pose_tf` topic which represents the posotion of the token transformed into the map frame.
+
+The behavior then checks if there is already a registered token within a distance of `0.15` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
+
+</details>
+
+<details>
+<summary><code>MoveTowardsToken</code> behavior description</summary>
+
+The `MoveTowardsToken` behavior utilizes both the Raspberry Pi camera and sensor data from the LiDAR (obtained by subscribing to the `/scan` topic). This behavior is triggered when the system detects a token that is within reach and has not yet been registered. Upon verifying that the token is new, the behavior uses the available information to pinpoint its location on the map and directs the TurtleBot to move towards it, gradually slowing down as it gets closer to the token.
+
+To be able to detect tokens using the Raspberry Pi camera, the custom `RaspicamDetector` class is used. This class subscribes to the `/raspicam_node/image/compressed` topic and uses the [`cv_bridge` package](https://wiki.ros.org/cv_bridge) to convert incoming images to a format that OpenCV can process.  
+Once the image has been converted to OpenCV format, the following steps are performed:
+1. Convert the image from BGR to HSV color space
+2. Create a mask that highlights the red color in the image using the lower and upper bounds for red color in the HSV color space
+3. Remove noise from the mask using morphological operations (opening and closing)
+4. Find contours in the mask
+5. Calculate the centers of the contours, sort them based on the estimated distance from the camera, and set the angle of each token relative to the camera
+
+after which the tokens are stored and used by the above mentioned logic within the `MoveTowardsToken` behavior.
+
+To know whether a token has already been registered, the `any_registered_token_within_distance` helper function is used that takes an estimated token map pose, a list of registered tokens, and a distance threshold as input and returns information whether there is any already registered token that is closer in Euclidean distance to the estimated token than the given distance threshold.
+
+</details>
+
+<details>
+<summary><code>WallFollower</code> behavior description</summary>
+
+The `WallFollower` behavior is internally controlled by two different classes, namely `TurnTowardsWall` and `FollowWall`, as well as a `RoundtripMonitor` class responsible for switching behaviors once the TurtleBot has completed the first round trip.
+
+The `TurnTowardsWall` logic turns towards a wall if the wall is not in front of the robot but is on its left. This is determined by checking the distance to the wall in front, front_left, and left directions using the LiDAR data published to the `/scan` topic. If the wall is on its left, the robot turns left towards the wall. The speed of the turn is determined by the distance to the wall. The closer the robot is to the wall, the slower the turn.
+
+The `FollowWall` logic instructs the TurtleBot to move forward and turn slightly left to keep the wall on its left side. The speed of the robot and the degree of the turn is determined by the distance to the wall in front, front_left, and left directions. The closer the robot is to the wall, the slower it moves and the sharper turn. Comparable to the `TurnTowardsWall` logic, the `/scan` topic is used to get the LiDAR data.
+
+The `RoundtripMonitor` monitors if the robot has completed a roundtrip by keeping track of the initial pose (using the custom `PoseTF` message (see [`current_pos` package](#current_pos-package)) of the robot when it first made contact with the wall and checking if the robot is near the same pose after it has left the area. If the robot is near the same pose again, it is considered to have completed a roundtrip.
+
+</details>
+
+<details>
+<summary><code>FindWall</code> behavior description</summary>
+
+The `FindWall` behavior has the lowest priority among the five available behaviors and is only executed when none of the other behaviors are applicable. When this behavior is triggered, the TurtleBot uses the `/cmd_vel` topic to move slowly towards a wall until it reaches one, at which point control is transferred to another behavior.
+
+</details>
+
+The main node additionally contains logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop upon which user interaction is required.
 
 ###### Usage
 
 The `token_detector` node can be launched with running the following command on the TurtleBot:
 
 ```console
-$ roslaunch token_detector token_detector.launch num_tokens:=<token-number>
+$ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
 ```
 
 ###### Arguments
@@ -67,7 +124,7 @@ The `current_pos` package contains the necessary files and logic for converting 
 
 ##### Functional Principle
 
-The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
+The node subscribes to the `/odom` topic (provided by the ), which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
 
 The provided `lookupTransoform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an x and y coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `euler_from_quaternion` method).  
 The converted pose is packaged into a custom `PoseInMap` message, which includes the x and y position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
@@ -139,6 +196,10 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
     ```console
     $ source ~/.bashrc
     ```
+4. Run
+    ```console
+    $ sudo mkdir /killerrobot && sudo chmod 766 /killerrobot
+    ```
 
 ##### TurtleBot
 1. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
@@ -147,7 +208,7 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 3. Edit the `~/.bahsrc` file and set
     * `ROS_HOSTNAME` with value `<turtlebot-ip-address>`
     * `ROS_MASTER_URI` with value `http://<remote-pc-ip-address>:11311`
-3. Run
+4. Run
     ```console
     $ source ~/.bashrc
     ```
@@ -155,7 +216,7 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 Please also see the following image taken from `TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`:
 [![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
 
-#### General setup
+#### General Setup
 
 To be able to run the software built into the TurtleBot, proceed with the following steps:
 1. Run `roscore` on the remote computer
@@ -177,13 +238,46 @@ Once all five steps have been executed, the general setup is completed and the T
 
 ### Using the TurtleBot
 
-TODO
+To start using the TurtleBot, proceed with the following steps:
+1. Create a labyrinth
+    * ***Note:*** For optimal performance, use the labyrinth pieces available in room `U131 Lab. auton. Systeme` of Vorarlberg UAS
+2. Follow the steps described in the [General Setup](#general-setup) chapter
+3. Have the remote computer with the compiled source code and packages ready
+
+#### Map labyrinth and detect tokens
+
+On the remote computer, run (in a new terminal):
+
+```console
+$ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
+```
+
+After the TurtleBot has completed the first round trip, the following message will be displayed in the terminal:
+```
+Initial roundtrip complete! Switched to different behaviors
+```
+
+The TurtleBot will then start following the left-hand side wall of the labyrinth, detecting all tokens and saving their positions in a reusable format.
+
+***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
+
+#### TODO -- TOKEN INSPECTOR -- TODO
+
+#### TODO -- INTERACTING WITH OTHER TEAM -- TODO
 
 ## Troubleshooting
 
 The TurtleBot is comprised of various hardware and software components, which can experience issues due to external factors, incorrect installation, improper execution sequence, or other causes. Some problems can easily be fixed, while others may require more attention and a technical understanding.
 
 The following list includes frequently encountered problems and respective solutions for hardware and software components in the TurtleBot.
+
+### The TurtleBot navigates insecurley within the labyrinth and/or crashes into walls
+
+In some cases, the TurtleBot may struggle with navigation in the labyrinth, missing walls or even crashing into them, and not detecting clearly visible tokens.
+
+**Solution 1:** Ensure optimal lighting conditions in the room, avoiding direct sunlight which could affect the Raspberry Pi Camera and PixyCam.
+
+**Solution 2:** The walls of the labyrinth may cause reflections if they are illuminated directly. Consider using a reflective coating, such as white paper, to reduce reflections.
 
 ### The TurtleBot is turned on but the LiDAR is not moving
 
