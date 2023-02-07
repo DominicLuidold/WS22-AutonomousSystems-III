@@ -67,7 +67,7 @@ class Scheduler:
             else:
                 rospy.loginfo('Get first from ordered token_distances')
                 goal_token = token_distances[0]
-            
+            self._currentTag = goal_token[0]
             resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
             return resp
         else:
