@@ -65,7 +65,7 @@ class Runner:
     def drive_towards_target(self, target: PoseStamped): #target is of type Point
         self.turn_towards_target(target.pose.position)
         self.drive_straight_to_target(target.pose.position)
-        rospy.Rate(10).sleep()
+        
 
     def is_robot_on_target(self, target: Point):
         try:
@@ -113,6 +113,7 @@ class Runner:
             current_pos_in_map = current_pos.mapPose
             
             angle_difference = self.get_angle_difference(current_pos_in_map.x, current_pos_in_map.y, current_pos_in_map.angle, target.x, target.y)
+            rospy.Rate(10).sleep()
     
     def convert_to_radians(self, degree):
         return degree * (math.pi / 180)
@@ -130,6 +131,7 @@ class Runner:
             cmd_vel = Twist()
             cmd_vel.linear.x = FORWARD_SPEED 
             self._movementPublisher.publish(cmd_vel)
+            rospy.Rate(10).sleep()
 
     def get_goal(self):
         rospy.loginfo('Get Goal')

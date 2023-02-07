@@ -9,6 +9,7 @@ from current_pos.msg import PoseTF
 from token_inspector.srv import GimmePathLength, GimmePath
 
 TOLERANCE_TO_TARGET = 0.05
+GET_EVERY_NTH = 10
 
 class Pathfinder:
     def __init__(self):
@@ -100,8 +101,17 @@ class Pathfinder:
         target.position.x = req.x
         target.position.y = req.y
         target.orientation.w = 1.0
-        resp = self.get_path_to_target(target)
+        resp:Path = self.get_path_to_target(target)
         # TODO: adapt path to target for nicer driving here
+        counter = 0
+        poses = []
+        for posestamped in resp.poses:
+            if counter >= GET_EVERY_NTH:
+                poses.append(posestamped)
+                counter = 0
+            counter += 1
+        resp.poses = poses
+        rospy.logwarn('Pathfinder initialized poses')
 
         return resp
 
