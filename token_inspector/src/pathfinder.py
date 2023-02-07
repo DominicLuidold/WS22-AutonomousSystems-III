@@ -50,7 +50,8 @@ class Pathfinder:
 
     def get_current_position(self):
         #use current_pos transform_position for receiving your position
-        return rospy.wait_for_message('pose_tf', PoseTF)
+        pose = rospy.wait_for_message('pose_tf', PoseTF)
+        return pose
 
     def handle_path_length(self, req):
         rospy.logwarn('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
