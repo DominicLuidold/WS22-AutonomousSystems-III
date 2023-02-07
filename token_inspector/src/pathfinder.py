@@ -20,11 +20,10 @@ class Pathfinder:
         rospy.wait_for_service('/move_base/make_plan')
         self._makePlan = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
         rospy.loginfo('Initialized service')
-        rospy.spin()
         #self.test()
 
     def get_path_to_target(self, target: Pose):
-        rospy.loginfo('Initializing PoseStampeds')
+        rospy.logdebug('Initializing PoseStampeds')
         start = self.get_current_position()
         start_stamped = PoseStamped()
         start_stamped.pose = self.convert_posetf_to_pose(start)
@@ -37,7 +36,7 @@ class Pathfinder:
 
         response = self._makePlan(start_stamped, target_stamped, TOLERANCE_TO_TARGET)
         rospy.loginfo('Received path')
-        return response
+        return response.plan
 
 
     def convert_posetf_to_pose(self, posetf: PoseTF):
@@ -54,8 +53,8 @@ class Pathfinder:
         return rospy.wait_for_message('pose_tf', PoseTF)
 
     def handle_path_length(self, req):
-        rospy.loginfo('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
-
+        rospy.logwarn('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logwarn(req)
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y
@@ -63,7 +62,7 @@ class Pathfinder:
         resp = self.get_path_to_target(target)
         #rospy.loginfo(resp)
 
-        distance = self.calculate_path_length(resp.plan)
+        distance = self.calculate_path_length(resp)
         rospy.loginfo('Pathfinder: Distance to target %i is: %f'%(req.id_token,distance))
         return distance
         
@@ -95,7 +94,7 @@ class Pathfinder:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def handle_path(self,req):
-        rospy.loginfo('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logerr('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y
@@ -103,7 +102,7 @@ class Pathfinder:
         resp = self.get_path_to_target(target)
         # TODO: adapt path to target for nicer driving here
 
-        return resp.plan
+        return resp
 
 
 
@@ -126,6 +125,7 @@ def main():
     try:
         node = Pathfinder()
         #node.test()
+        rospy.spin()
     except rospy.ROSInterruptException:
         pass
 

@@ -2,10 +2,10 @@ import rospy
 import json
 from os import path
 from operator import itemgetter
-from token_inspector.srv import GimmeGoal, GimmePathLength
+from token_inspector.srv import GimmeGoal, GimmePathLength, GimmeGoalResponse
 
 
-FINISHED = -1
+FOUND_TAG = -1
 INITIAL = -4711
 FILENAME = '/killerrobot/token_positions.json'
 IS_COLLABORATIVE = False
@@ -24,7 +24,7 @@ class Scheduler:
 
         self.load_file()
 
-        #rospy.spin()
+        rospy.spin()
     
     def load_file(self):
         if path.isfile(FILENAME):
@@ -38,20 +38,20 @@ class Scheduler:
     def handle_goal_scheduling(self, req):
         rospy.loginfo('Received request: %s'%req.id_found)
 
-        if req.id_found == FINISHED:
+        if req.id_found == FOUND_TAG:
             #write found in tag name
             rospy.loginfo('Write True to Found')
             self._tokenpositions[self._currentTag]['found'] = True
 
         rospy.loginfo('Look for shortest A* path')
         token_distances = [] #(token, distance)
-        for token in self._tokenpositions.keys():
-            if not self._tokenpositions[token['name']]['found']:
-                rospy.loginfo('Ask for distance to token: %s'%token)
+
+        for id, token in self._tokenpositions.items():
+            if not token['found']:
+                rospy.loginfo('Ask for distance to token: %s'%token['name'])
                 token_distances.append(self.get_path_length(token))
 
                 #TODO: Add communication with A*, tokendistances.append(token, distance)
-
 
         #Order token_distances by distances
         token_distances = sorted(token_distances, key=itemgetter(1))
@@ -68,11 +68,11 @@ class Scheduler:
                 rospy.loginfo('Get first from ordered token_distances')
                 goal_token = token_distances[0]
             
-            #resp = GimmeGoalsResponse(self._tokenpositions[goal_token], self._tokenpositions[goal_token]['x'], self._tokenpositions[goal_token]['y'])
-            return #resp
+            resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
+            return resp
         else:
             rospy.loginfo('All Tokens have been seen')
-            #return GimmeGoalsResponse(-1, 0.0, 0.0)
+            return GimmeGoalResponse(-1, 0.0, 0.0)
 
     def get_path_length(self, token):
         rospy.loginfo('Get pathlength of token %s'%token['name'])

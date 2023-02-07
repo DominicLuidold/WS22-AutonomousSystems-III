@@ -33,10 +33,9 @@ class WallLocalizer:
         quaternion = estimated_pose.pose.pose.orientation
         quaternion_array = [quaternion.x, quaternion.y, quaternion.z, quaternion.w]
         self.pose['angle'] = tf.transformations.euler_from_quaternion(quaternion_array)[2]
-        if not self._is_localized:
+        if not self._is_localized and self._execution_time_passed:
             cov = estimated_pose.pose.covariance
             xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
-            rospy.logwarn(xyyaw)
             self._is_localized = all([abs(certainty) < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
             if self._is_localized: 
                 rospy.logerr('Localization complete!')

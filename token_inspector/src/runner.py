@@ -4,8 +4,9 @@ import tf
 import numpy as np
 import math
 from token_inspector.srv import GimmeGoal, GimmePath
-from geometry_msgs.msg import Point, Twist
+from geometry_msgs.msg import Point, Twist, PoseStamped
 from current_pos.msg import PoseTF, PoseInMap
+from nav_msgs.msg import Path
 
 MAX_TOKEN_DISTANCE = 0.05
 FORWARD_SPEED = 0.22
@@ -20,11 +21,13 @@ class Runner:
         self._hasGoal = False
         rospy.wait_for_service('give_goals_service')
         self._gimmeGoals = rospy.ServiceProxy('give_goals_service', GimmeGoal)
+        rospy.loginfo('give goals service up')
         rospy.wait_for_service('provide_path_service')
         self._gimmePath = rospy.ServiceProxy('provide_path_service', GimmePath)
         self._currentToken = -1
         self._reachedGoal = False
         self._path = [] #[Point]
+        rospy.loginfo('runner init complete')
 
         #init frames for transformations
         self._mapFrame = 'map'
@@ -36,23 +39,32 @@ class Runner:
         self._movementPublisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
     def run(self):
-        while not rospy.is_shutdown() or self._isFinished:
+        while not rospy.is_shutdown() and not self._isFinished:
             #Get goal
             self._currentToken, x, y = self.get_goal()
+            rospy.logwarn(f'runner received goal {self._currentToken}')
+            if self._currentToken == -1:
+                self._isFinished = True
+                rospy.loginfo('All Tokens are found')
+                continue;
             self._reachedGoal = False
-            rospy.loginfo('Drive to point: %s | %s'%x%y)
-            self._path = self.get_path(self._currentToken, x, y)
+            rospy.loginfo('Drive to point: %s | %s'%(x,y))
+            self._path: Path = self.get_path(self._currentToken, x, y)
 
-            pointsqueue = queue.Queue(self._path)
+            pointsqueue = queue.Queue()
+            for pose in self._path.poses:
+                pointsqueue.put(pose)
+            rospy.logwarn(pointsqueue.empty())
             while not self._reachedGoal:
-                currentPoint = pointsqueue.get()
+                currentPoint:PoseStamped = pointsqueue.get()
                 self.drive_towards_target(currentPoint)
-                if pointsqueue.empty: #and robot is at right position
+                if pointsqueue.empty(): #and robot is at right position
                     self._reachedGoal = True
+                    rospy.loginfo('Reached goal %s at coordinates: %s|%s'%(self._currentToken, currentPoint.pose.position.x, currentPoint.pose.position.y))
 
-    def drive_towards_target(self, target: Point): #target is of type Point
-        self.turn_towards_target(target)
-        self.drive_straight_to_target(target)
+    def drive_towards_target(self, target: PoseStamped): #target is of type Point
+        self.turn_towards_target(target.pose.position)
+        self.drive_straight_to_target(target.pose.position)
 
     def is_robot_on_target(self, target: Point):
         try:
@@ -120,6 +132,7 @@ class Runner:
             return resp.id, resp.x, resp.y
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)
+        return None
 
     def get_path(self, id, x, y):
         rospy.loginfo('Get Path')
@@ -129,7 +142,7 @@ class Runner:
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)
 
-    def get_angle_difference(current_x, current_y, current_heading, target_x, target_y):
+    def get_angle_difference(self, current_x, current_y, current_heading, target_x, target_y):
         '''
         current_heading is in radians
         angle difference is in radians
@@ -162,8 +175,8 @@ class Runner:
 def main():
     try:
         node = Runner()
-        node.test_path()
-        #node.run()
+        #node.test_path()
+        node.run()
     except rospy.ROSInterruptException:
         pass
 
