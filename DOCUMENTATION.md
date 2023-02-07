@@ -16,7 +16,7 @@ The `token_detector` package is organized into various nodes, each designed to c
 
 ###### Purpose
 
-The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` topics, converting themk to the OpenCV format and subsequently displaying them in a window.
+The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` topics, converting them to the OpenCV format and subsequently displaying them in a window.
 
 ###### Usage
 
@@ -37,8 +37,8 @@ The `token_detector` node serves two main purposes: mapping the labyrinth in whi
 The `token_detector` node implements a reactive and behavior-based architecture, utilizing a subsumption architecture made up of multiple independent behaviors. This design enables the robot to efficiently explore its surroundings and gather tokens. The main node continuously determines which behavior is appropriate to execute based on the sensor data at any given time.
 
 The `token_detector` consists of the following five behaviors (ordered descending by priority):
-* `StepOntoToken`: The highest priority behavior responsible for stepping onto a detected token and claiming it.
-* `CaptureToken`: The behavior is responsible for detecting and capturing tokens in the labyrinth.
+* `StepOntoToken`: The highest priority behavior responsible for stepping onto a detected token.
+* `CaptureToken`: The behavior is responsible for capturing tokens in the labyrinth, saving their location.
 * `MoveTowardsToken`: This behavior drives the robot towards a detected token.
 * `WallFollower`: The behavior is responsible for following the labyrinth walls on the left hand side.
 * `FindWall`: This behavior is responsible for finding a wall and orienting the robot towards it.
@@ -55,7 +55,7 @@ To be able to detect when the PixyCam is recognizing a token, the custom `Pixyca
 <details>
 <summary><code>CaptureToken</code> behavior description</summary>
 
-Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [`current_pos` package](#current_pos-package)) message published on the `/pose_tf` topic which represents the posotion of the token transformed into the map frame.
+Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [`current_pos` package](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
 
 The behavior then checks if there is already a registered token within a distance of `0.15` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
 
@@ -87,9 +87,9 @@ The `WallFollower` behavior is internally controlled by two different classes, n
 
 The `TurnTowardsWall` logic turns towards a wall if the wall is not in front of the robot but is on its left. This is determined by checking the distance to the wall in front, front_left, and left directions using the LiDAR data published to the `/scan` topic. If the wall is on its left, the robot turns left towards the wall. The speed of the turn is determined by the distance to the wall. The closer the robot is to the wall, the slower the turn.
 
-The `FollowWall` logic instructs the TurtleBot to move forward and turn slightly left to keep the wall on its left side. The speed of the robot and the degree of the turn is determined by the distance to the wall in front, front_left, and left directions. The closer the robot is to the wall, the slower it moves and the sharper turn. Comparable to the `TurnTowardsWall` logic, the `/scan` topic is used to get the LiDAR data.
+The `FollowWall` logic instructs the TurtleBot to move forward and turn slightly left to keep the wall on its left side. The speed of the robot and the degree of the turn is determined by the distance to the wall in front, front_left, and left directions. The closer the robot is to the wall, the slower it moves and the sharper the turn. Comparable to the `TurnTowardsWall` logic, the `/scan` topic is used to get the LiDAR data.
 
-The `RoundtripMonitor` monitors if the robot has completed a roundtrip by keeping track of the initial pose (using the custom `PoseTF` message (see [`current_pos` package](#current_pos-package)) of the robot when it first made contact with the wall and checking if the robot is near the same pose after it has left the area. If the robot is near the same pose again, it is considered to have completed a roundtrip.
+The `RoundtripMonitor` monitors if the robot has completed a roundtrip by keeping track of the initial pose (using the custom `PoseTF` message (see [`current_pos` package](#current_pos-package))) of the robot when it first made contact with the wall and checking if the robot is near the same pose after it has left the area. If the robot is near the same pose again, it is considered to have completed a roundtrip.
 
 </details>
 
@@ -100,7 +100,7 @@ The `FindWall` behavior has the lowest priority among the five available behavio
 
 </details>
 
-The main node additionally contains logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop upon which user interaction is required.
+The main node contains the logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop upon which user interaction is required.
 
 ###### Usage
 
@@ -126,12 +126,12 @@ The `current_pos` package contains the necessary files and logic for converting 
 
 ##### Functional Principle
 
-The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
+The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic and converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf)[^1].
 
-The provided `lookupTransoform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an x and y coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `euler_from_quaternion` method).  
-The converted pose is packaged into a custom `PoseInMap` message, which includes the x and y position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
+The provided `lookupTransform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an `x` and `y` coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `tf.euler_from_quaternion` method).  
+The converted pose is packaged into a custom `PoseInMap` message, which includes the `x` and `y` position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
 
-Both the `PoseInMap` and `PoseTF` messages are used in other packages related to the TurtleBot's functionality.
+Both the `PoseInMap` and `PoseTF` messages are used in other custom packages related to the TurtleBot's functionality.
 
 ##### Usage
 
@@ -157,7 +157,8 @@ TODO
 
 ### Adapted Modules
 
-TODO - Adapted Modules?
+* camera settings
+* slam parameter
 
 ## Getting Started
 
@@ -185,7 +186,7 @@ Once the Raspberry Pi modules starts to light up, the rest of the TurtleBot (inc
 
 #### First time setup
 
-Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the general setup.
+Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the [General Setup](#general-setup).
 
 ##### Remote Computer
 *The setup guide assumes that the operating system used is either a Linux distribution or that Windows Subsystem for Linux is used.*
@@ -293,8 +294,7 @@ In some cases, the LiDAR may not be operating even if the TurtleBot has been cor
 
 In some instances, the Li-Po battery may have a low charge that isn't low enough to trigger the low battery beep, but it still may not be enough to power the TurtleBot's wheels.
 
-**Solution:** To resolve this, turn off the TurtleBot by turning off the Raspberry Pi module. Wait for 10-20 seconds and then disconnect the Li-Po battery. Finally, reconnect a fully charged Li-Po battery.  
-Refer to `General setup` for further instructions.
+**Solution:** To resolve this, turn off the TurtleBot by turning off the Raspberry Pi module. Wait for 10-20 seconds and then disconnect the Li-Po battery. Finally, reconnect a fully charged Li-Po battery. Refer to [General Setup](#general-setup) for further instructions.
 
 ### An error message indicating out-of-sync timestamps appears
 
@@ -323,3 +323,8 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 **Solution 1:** Verify that the LiDAR is securely attached to the TurtleBot's top platform and all its ports are properly connected.
 
 **Solution 2:** Consider replacing the malfunctioning LiDAR with a different, functional LiDAR module to determine if the issue is due to a faulty LiDAR.
+
+## Other
+
+[^1]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
+  See [`tf` package in ROS wiki](https://wiki.ros.org/tf)
