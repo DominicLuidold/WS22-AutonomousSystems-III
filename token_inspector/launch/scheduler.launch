@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="token_inspector" type="scheduler.py" name="scheduler" output="screen"></node>
+</launch>
