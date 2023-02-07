@@ -47,12 +47,12 @@ class MoveTowardsToken:
     clst_tkn = self._unrecognized_tokens[0]
     linear_velocity = 0.1 * clst_tkn[2] + 0.05
     angular_velocity = clst_tkn[3] * 0.35
-    distance = {'front': filtered_min(self._ranges[:15] + self._ranges[-15:], self._range_min),
-                'front_left': filtered_min(self._ranges[30:60], self._range_min),
-                'left': filtered_min(self._ranges[75:105], self._range_min),
+    distance = {'front': filtered_min(self._ranges[:20] + self._ranges[-20:], self._range_min),
+                'front_left': filtered_min(self._ranges[20:60], self._range_min),
+                'left': filtered_min(self._ranges[60:105], self._range_min),
                 'left_behind': filtered_min(self._ranges[105:135], self._range_min),
-                'front_right': filtered_min(self._ranges[-60:-30], self._range_min),
-                'right': filtered_min(self._ranges[-105:-75], self._range_min),
+                'front_right': filtered_min(self._ranges[-60:-20], self._range_min),
+                'right': filtered_min(self._ranges[-105:-60], self._range_min),
                 'right_behind': filtered_min(self._ranges[-135:-105], self._range_min)}
     if distance['front_left'] < MAX_DETECTION_DIST and distance['front_left'] < distance['left_behind']:
       rospy.logwarn('correct left')

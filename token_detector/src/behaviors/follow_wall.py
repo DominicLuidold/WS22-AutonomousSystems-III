@@ -32,9 +32,9 @@ class WallFollower:
     if self._scan:
       ranges = self._scan.ranges
       range_min = self._scan.range_min
-      self._dist = {'front': filtered_min(ranges[:15] + ranges[-15:], range_min), \
-                   'front_left': filtered_min(ranges[30:60], range_min), \
-                   'left': filtered_min(ranges[75:105], range_min)}
+      self._dist = {'front': filtered_min(ranges[:20] + ranges[-20:], range_min), \
+                   'front_left': filtered_min(ranges[20:60], range_min), \
+                   'left': filtered_min(ranges[60:105], range_min)}
       return any([b.isApplicable(self._dist) for b in self._behaviors])
     return False
 
