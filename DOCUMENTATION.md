@@ -1,5 +1,7 @@
 # Documentation
 
+<img src="documentation/TurtleBot3_SteFloDom.jpg" alt="Image of the `SteFloDom` TurtleBot 3" style="height: 500px" />
+
 ## Architecture
 
 ### Custom Modules
@@ -124,7 +126,7 @@ The `current_pos` package contains the necessary files and logic for converting 
 
 ##### Functional Principle
 
-The node subscribes to the `/odom` topic (provided by the ), which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
+The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic nd converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf).
 
 The provided `lookupTransoform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an x and y coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `euler_from_quaternion` method).  
 The converted pose is packaged into a custom `PoseInMap` message, which includes the x and y position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
@@ -213,7 +215,7 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
     $ source ~/.bashrc
     ```
 
-Please also see the following image taken from `TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`:
+Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start):
 [![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
 
 #### General Setup
