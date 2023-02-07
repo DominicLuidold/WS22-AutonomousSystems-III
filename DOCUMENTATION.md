@@ -151,11 +151,9 @@ $ roslaunch current_pos launch_transformer.launch
 
 TODO
 
-#### `amcl_loclization` package
-
-TODO
-
 ### Adapted Modules
+
+
 
 * camera settings
 * slam parameter
@@ -221,6 +219,20 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 
 #### General Setup
 
+##### PixyCam
+
+To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
+1. Place the PixyCam over a red token
+2. Press and hold the button until the LED turns white, then release when it turns red
+3. Move the camera away from the token
+4. Repeat `Step 1`, waiting for the LED to turn red
+    * ***Note:*** Very good lighting conditions are required for this
+5. Press the button once
+
+ ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality.
+
+##### Software
+
 To be able to run the software built into the TurtleBot, proceed with the following steps:
 1. Run `roscore` on the remote computer
 2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
@@ -234,7 +246,7 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     ```
 5. Run (in a new terminal session)
     ```console
-    $ roslaunch raspicam_node camerav2_410x308.launch 
+    $ roslaunch raspicam_node camerav2_custom.launch
     ```
 
 Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
@@ -243,7 +255,7 @@ Once all five steps have been executed, the general setup is completed and the T
 
 To start using the TurtleBot, proceed with the following steps:
 1. Create a labyrinth
-    * ***Note:*** For optimal performance, use the labyrinth pieces available in room `U131 Lab. auton. Systeme` of Vorarlberg UAS
+    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart.
 2. Follow the steps described in the [General Setup](#general-setup) chapter
 3. Have the remote computer with the compiled source code and packages ready
 
@@ -323,8 +335,6 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 **Solution 1:** Verify that the LiDAR is securely attached to the TurtleBot's top platform and all its ports are properly connected.
 
 **Solution 2:** Consider replacing the malfunctioning LiDAR with a different, functional LiDAR module to determine if the issue is due to a faulty LiDAR.
-
-## Other
 
 [^1]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
   See [`tf` package in ROS wiki](https://wiki.ros.org/tf)
