@@ -54,7 +54,7 @@ class Pathfinder:
         return pose
 
     def handle_path_length(self, req):
-        rospy.logwarn('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logwarn('Received request for pathlength of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         rospy.logwarn(req)
         target = Pose()
         target.position.x = req.x
@@ -95,7 +95,7 @@ class Pathfinder:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def handle_path(self,req):
-        rospy.logerr('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logerr('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y

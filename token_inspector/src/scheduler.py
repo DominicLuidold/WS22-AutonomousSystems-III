@@ -25,8 +25,9 @@ class Scheduler:
         self.load_file()
 
         rospy.spin()
-    
+
     def load_file(self):
+        tokenpositions = []
         if path.isfile(FILENAME):
             with open(FILENAME) as fp:
                 tokenpositions = json.load(fp)
