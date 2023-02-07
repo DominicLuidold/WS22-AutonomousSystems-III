@@ -134,7 +134,7 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 1. Determine the IP address of the computer
 2. Edit the `~/.bahsrc` file and set
     * `ROS_HOSTNAME` with value `<ip-address>`
-    * `ROS_MASTER_URI` with value `http://<ip-addredd>:11311`
+    * `ROS_MASTER_URI` with value `http://<ip-address>:11311`
 3. Run
     ```console
     $ source ~/.bashrc
@@ -170,7 +170,7 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     ```
 5. Run (in a new terminal session)
     ```console
-    $ roslaunch raspicam_node camerav2_1280x960.launch 
+    $ roslaunch raspicam_node camerav2_410x308.launch 
     ```
 
 Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
@@ -178,3 +178,52 @@ Once all five steps have been executed, the general setup is completed and the T
 ### Using the TurtleBot
 
 TODO
+
+## Troubleshooting
+
+The TurtleBot is comprised of various hardware and software components, which can experience issues due to external factors, incorrect installation, improper execution sequence, or other causes. Some problems can easily be fixed, while others may require more attention and a technical understanding.
+
+The following list includes frequently encountered problems and respective solutions for hardware and software components in the TurtleBot.
+
+### The TurtleBot is turned on but the LiDAR is not moving
+
+In some cases, the LiDAR may not be operating even if the TurtleBot has been correctly turned on and the setup steps have been followed correctly. To resolve the issue:
+
+**Solution 1:** It's possible that the `roslaunch turtlebot3_bringup turtlebot3_robot.launch` script has crashed or lost connection to the ROS Master. Connect to the TurtleBot using SSH, stop the script and restart it.
+
+**Solution 2:** If the `roscore` script has crashed or lost connection to the network, connect to the remote computer, stop the script and restart it. Then, follow the steps of `Solution 1`.
+
+### The TurtleBot is turned on but the wheels are not moving
+
+In some instances, the Li-Po battery may have a low charge that isn't low enough to trigger the low battery beep, but it still may not be enough to power the TurtleBot's wheels.
+
+**Solution:** To resolve this, turn off the TurtleBot by turning off the Raspberry Pi module. Wait for 10-20 seconds and then disconnect the Li-Po battery. Finally, reconnect a fully charged Li-Po battery.  
+Refer to `General setup` for further instructions.
+
+### An error message indicating out-of-sync timestamps appears
+
+In some cases, an error message indicating out-of-sync timestamps may appear, such as:
+```
+For frame [base_scan]: No transform to fixed frame [map].  
+TF error: [Lookup would require extrapolation -0,522100208s into the future.  Requested time 1666254110,220566034 but the latest data is at time 1666254109,698465824, when looking up transform from frame [base_scan] to frame [map]]
+```
+or
+```
+Costmap2DROS transform timeout. Current time: 1666254261.9980, global_pose stamp: 1666254261.2392, tolerance: 0.5000 
+```
+
+**Solution:** To resolve this issue, synchronize the time on the Raspberry Pi and the remote computer with a NTP time server.
+
+### The `roslaunch turtlebot3_bringup turtlebot3_robot.launch` script is encountering an error
+
+In some instances, the `roslaunch turtlebot3_bringup turtlebot3_robot.launch` script may display the error message `Creation of publisher failed: Checksum does not match` related to `sensor_msgs/JointState`. This can result in the TurtleBot being unable to navigate using Rviz, SLAM or other methods.
+
+**Solution:** To resolve this issue, try reflashing the OpenCR firmware following [these instruction](https://emanual.robotis.com/docs/en/platform/turtlebot3/opencr_setup/#opencr-setup).
+
+### The TurtleBot is turned on, but the LiDAR is not functioning properly and/or keeps shutting down randomly.
+
+In some rare cases, the LiDAR may not return any sensor data and/or shut down unexpectedly, despite attempts to resolve the issue through other solutions.
+
+**Solution 1:** Verify that the LiDAR is securely attached to the TurtleBot's top platform and all its ports are properly connected.
+
+**Solution 2:** Consider replacing the malfunctioning LiDAR with a different, functional LiDAR module to determine if the issue is due to a faulty LiDAR.
