@@ -126,6 +126,13 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 ## Architecture
 
+The TurtleBot's software is divided into two main phases, each of which requires user input to start and end. The two phases work together to allow the TurtleBot to navigate through any given labyrinth (that meets the minimum requirements mentioned in [*Using the TurtleBot*](#using-the-turtlebot)), detect tokens, and ultimately plan a path through the labyrinth to reach each token in turn.
+
+Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is an important and encapsulated step to ensure that a correct map of the given maze has been generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates and an incomplete map would have been a more difficult and error-prone approach.  
+Once the map is generated, Phase 1 continues with the TurtleBot driving through the labyrinth again, this time with the goal of detecting tokens and storing their location based on the generated map. The TurtleBot uses the wall following approach to navigate and uses its token detection algorithm (see [*`token_detector` - Functional Principle*](#functional-principle) for more details) to identify each token it encounters and store its location. It will continue to do this until it has found the number of tokens specified by the user.
+
+Phase 2 -> todo
+
 ### Custom Modules
 
 #### `token_detector` package
@@ -152,7 +159,7 @@ $ roslaunch token_detector image_viewer.launch
 
 ###### Purpose
 
-The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a format that can be easily reused.
+The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a locally saved JSON file that can be easily reused where needed (for a more detailed explanation, refer to *`CaptureToken` behavior description*).
 
 ###### Functional Principle
 
@@ -164,6 +171,8 @@ The `token_detector` consists of the following five behaviors (ordered descendin
 * `MoveTowardsToken`: This behavior drives the robot towards a detected token.
 * `WallFollower`: The behavior is responsible for following the labyrinth walls on the left hand side.
 * `FindWall`: This behavior is responsible for finding a wall and orienting the robot towards it.
+
+The specific priority of the behaviors has been chosen to ensure that reacting to a token has the highest priority, as this is one of the core functionalities and requirements of the TurtleBot's software. Following and finding a wall have been given the lowest priority, as finding and following a wall is always possible, whereas missing a token may result in significantly longer runtime and an increased likelihood of errors or missed tokens.
 
 <details>
 <summary><code>StepOntoToken</code> behavior description</summary>
@@ -177,7 +186,7 @@ To be able to detect when the PixyCam is recognizing a token, the custom `Pixyca
 <details>
 <summary><code>CaptureToken</code> behavior description</summary>
 
-Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [`current_pos` package](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
+Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [*`current_pos` package*](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
 
 The behavior then checks if there is already a registered token within a distance of `0.15` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
 
@@ -192,13 +201,23 @@ To be able to detect tokens using the Raspberry Pi camera, the custom `RaspicamD
 Once the image has been converted to OpenCV format, the following steps are performed:
 1. Convert the image from BGR to HSV color space
 2. Create a mask that highlights the red color in the image using the lower and upper bounds for red color in the HSV color space
-3. Remove noise from the mask using morphological operations (opening and closing)
+3. Remove noise from the mask using morphological operations
 4. Find contours in the mask
 5. Calculate the centers of the contours, sort them based on the estimated distance from the camera, and set the angle of each token relative to the camera
 
-after which the tokens are stored and used by the above mentioned logic within the `MoveTowardsToken` behavior.
+The location of a token within the map is determined using a custom camera point grid, which assigns a map coordinate (a tuple of `x` and `y` values) to a specific pixel range (also a tuple of `x` and `y` values). For further information, please refer to the footnote and the *Camera Point Grid for `410x308` Pixels Resolution* section below.[^cam-point-grid]  
+The closest grid point is then calculated by finding the euclidean distance between the token's `x` and `y` coordinates and these map coordinates. This information is used to determine the token's location within the map frame and determine if it has already been recognized based on its calculated position and previously calculated positions of other tokens.
+
+<details>
+<summary>Camera Point Grid for <code>410x308</code> Pixels Resolution</summary>
+
+<img src="documentation/camera_point_grid.jpg" alt="Camera Point Grid for `410x308` Pixels Resolution" style="height: 700px" />
+
+</details>
 
 To know whether a token has already been registered, the `any_registered_token_within_distance` helper function is used that takes an estimated token map pose, a list of registered tokens, and a distance threshold as input and returns information whether there is any already registered token that is closer in Euclidean distance to the estimated token than the given distance threshold.
+
+The `MoveTowardsToken` behavior includes parts of the `WallFollower` logic to prevent driving too close or crashing into a wall while steering towards a detected token. For improved accuracy, instead of just the front, front-left, and left surroundings, the complete 360° range of the LiDAR is used.
 
 </details>
 
@@ -211,7 +230,8 @@ The `TurnTowardsWall` logic turns towards a wall if the wall is not in front of 
 
 The `FollowWall` logic instructs the TurtleBot to move forward and turn slightly left to keep the wall on its left side. The speed of the robot and the degree of the turn is determined by the distance to the wall in front, front_left, and left directions. The closer the robot is to the wall, the slower it moves and the sharper the turn. Comparable to the `TurnTowardsWall` logic, the `/scan` topic is used to get the LiDAR data.
 
-The `RoundtripMonitor` monitors if the robot has completed a roundtrip by keeping track of the initial pose (using the custom `PoseTF` message (see [`current_pos` package](#current_pos-package))) of the robot when it first made contact with the wall and checking if the robot is near the same pose after it has left the area. If the robot is near the same pose again, it is considered to have completed a roundtrip.
+The `RoundtripMonitor` monitors if the robot has completed a roundtrip by keeping track of the initial pose (using the custom `PoseTF` message (see [`current_pos` package](#current_pos-package)) of the robot when it first made contact with the wall, and checking if the robot is near the same pose after leaving the area. If the robot is near the same pose again, it is considered to have completed a roundtrip.  
+To determine whether the current position is near the starting area of the roundtrip, the euclidean distance is used as a measure based on the `x` and `y` coordinates of the TurtleBot.
 
 </details>
 
@@ -248,7 +268,7 @@ The `current_pos` package contains the necessary files and logic for converting 
 
 ##### Functional Principle
 
-The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic and converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf)[^1].
+The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic and converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf)[^tf-package].
 
 The provided `lookupTransform` method is used to get the position and orientation of the robot in the map frame. The position is stored as an `x` and `y` coordinate, while the orientation is stored as a yaw angle (representing rotation around the z-axis; calculated using the provided `tf.euler_from_quaternion` method).  
 The converted pose is packaged into a custom `PoseInMap` message, which includes the `x` and `y` position and the yaw angle. This message is then combined with the original `/odom` pose into a custom `PoseTF` message, which includes a header with a sequence number and timestamp, the original `/odom` pose, and the converted map pose.
@@ -275,10 +295,25 @@ TODO
 
 ### Adapted Modules
 
+#### Raspberry Pi camera configuration
+
+To enhance the performance of the Raspberry Pi camera when detecting tokens and to avoid overheating, delays, and other limitations, the following configuration modifications were made:
+* reduced the resolution from `1280x960` to `410x308` pixels.
+* set the `saturation` value to `70`.
+* changed the white balance mode (`awb_mode`) to `incandescent`.
+
+```xml
+<param name="saturation" value="70"/>
+<param name="awb_mode" value="incandescent"/>
+```
+
+For customizing the camera configuration, two following two files are necessary which both have been originally copied over from the `camerav2_410x308` launch file pendants that were later adapted:
+* `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
+* `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
 
 
-* camera settings
-* slam parameter
+#### Slam parameter
+todo
 
 ## Troubleshooting
 
@@ -336,23 +371,7 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 
 **Solution 2:** Consider replacing the malfunctioning LiDAR with a different, functional LiDAR module to determine if the issue is due to a faulty LiDAR.
 
-## Other
+[^cam-point-grid]: https://github.com/DominicLuidold/WS23-AutonomousSystems-III/blob/master/token_detector/src/behaviors/move_towards_token.py#L16
 
-### Raspberry Pi camera configuration
-
-To enhance the performance of the Raspberry Pi camera when detecting tokens and to avoid overheating, delays, and other limitations, the following configuration modifications were made:
-* reduced the resolution from `1280x960` to `410x308` pixels.
-* set the `saturation` value to `70`.
-* changed the white balance mode (`awb_mode`) to `incandescent`.
-
-```xml
-<param name="saturation" value="70"/>
-<param name="awb_mode" value="incandescent"/>
-```
-
-For customizing the camera configuration, two following two files are necessary which both have been originally copied over from the `camerav2_410x308` launch file pendants that were later adapted:
-* `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
-* `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
-
-[^1]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
+[^tf-package]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
   See [`tf` package in ROS wiki](https://wiki.ros.org/tf)
