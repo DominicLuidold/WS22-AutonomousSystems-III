@@ -1,6 +1,6 @@
 [
    {
-      "name": 0,
+      "name": 7,
       "found": false,
       "map_position": {
          "x": 0.13133648037910461,
@@ -9,7 +9,7 @@
       }
    },
    {
-      "name": 1,
+      "name": 6,
       "found": false,
       "map_position": {
          "x": -0.4607296884059906,
@@ -18,7 +18,7 @@
       }
    },
    {
-      "name": 2,
+      "name": 5,
       "found": false,
       "map_position": {
          "x": -0.17436063289642334,

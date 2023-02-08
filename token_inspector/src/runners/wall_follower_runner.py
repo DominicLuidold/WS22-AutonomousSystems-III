@@ -51,6 +51,7 @@ class WallFollower:
         self.turned_towards_goal = False
 
     def follow(self):
+        rospy.logdebug('wallfollowerrunner: follow')
         if self._scan and self.goal:
             ranges = self._scan.ranges
             range_min = self._scan.range_min
@@ -86,7 +87,6 @@ class TurnTowardsGoal:
     def execute(self, dist, direction: Direction, invoke_move):
         goal = self._master.goal
         angle = get_angle_difference(self._pose.x, self._pose.y, self._pose.angle, goal.x, goal.y)
-        rospy.logerr(angle)
         if abs(angle) > 0.05:
             invoke_move(0, angle)
         else:

@@ -24,21 +24,17 @@ def eucl_distance(x1, y1, x2, y2):
 
 
 def get_angle_difference(current_x, current_y, current_heading, target_x, target_y):
-        '''
-        current_heading is in radians
-        angle difference is in radians
-        '''
-        # Calculate the direction vector
-        direction_vector = [target_x - current_x, target_y - current_y]
-
-        # Calculate the angle between the direction vector and the x-axis
-        target_angle = math.atan2(direction_vector[1], direction_vector[0])
-
-        # Calculate the difference between the current heading and the target angle
-        angle_difference = target_angle - current_heading
-
-        # Normalize the angle difference to be within the range of -pi and pi
-        angle_difference = math.atan2(math.sin(angle_difference), math.cos(angle_difference))
-
-        # Return the angle difference
-        return angle_difference
+    '''
+    current_heading is in radians
+    angle difference is in radians
+    '''
+    # Calculate the direction vector
+    direction_vector = [target_x - current_x, target_y - current_y]
+    # Calculate the angle between the direction vector and the x-axis
+    target_angle = math.atan2(direction_vector[1], direction_vector[0])
+    # Calculate the difference between the current heading and the target angle
+    angle_difference = target_angle - current_heading
+    # Normalize the angle difference to be within the range of -pi and pi
+    angle_difference = math.atan2(math.sin(angle_difference), math.cos(angle_difference))
+    # Return the angle difference
+    return angle_difference

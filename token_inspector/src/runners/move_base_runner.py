@@ -7,7 +7,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseFeedback, M
 import time
 from helpers.helper import eucl_distance
 
-MAX_TOKEN_DISTANCE = 0.02
+MAX_TOKEN_DISTANCE = 0.03
 
 class MoveBaseRunner:
     def __init__(self, goal_reached:Callable) -> None:
@@ -16,19 +16,18 @@ class MoveBaseRunner:
         # wait for the action server to come up
         rospy.logdebug("Waiting for move_base action server...")
         self._move_base_client.wait_for_server()
-        rospy.logerr('status' + str(self._move_base_client.get_state()))
         self._active = False
         self._failure_time = 0 # very looong ago
         self._state: GoalStatus = 0
         self._goal: GimmeGoalResponse = None
-        
+        self._reached_goals = []
 
     def is_applicable(self, goal:GimmeGoalResponse):
         return self._active or time.time() - self._failure_time > 10
-        #return False
 
     def run(self, target:GimmeGoalResponse):
         if not self._active:
+            rospy.loginfo(f'movebaserunner: new goal {target.id}')
             self._goal = target
             goal:MoveBaseGoal = MoveBaseGoal()
             goal.target_pose.header.frame_id = "map"
@@ -52,19 +51,21 @@ class MoveBaseRunner:
             self._goal_reached()
 
     def _done_cb(self, state:GoalStatus, result:MoveBaseResult):
-        rospy.logerr(f'move base done with status {state}')
-        if self._active: # necessary as sometimes done_cb is invoked right after feedback_cb determined that goal was geached -> avoid reached goal invokation twice
-            if state == GoalStatus.SUCCEEDED:
-                self._goal_reached()
-            elif state == GoalStatus.ABORTED:
-                rospy.logerr('movebaserunner: Aborted!')
-                self.stop()
-                self._failure_time = time.time()
+        rospy.logdebug(f'move base done with status {state}')
+        if state == GoalStatus.SUCCEEDED:
+            self._goal_reached()
+        else: # state == GoalStatus.ABORTED:
+            rospy.logerr('movebaserunner: Aborted!')
+            self.stop()
+            self._failure_time = time.time()
 
     def _goal_reached(self):
-        self._active = False
-        rospy.logerr(f'movebaserunner: Token {self._goal.id} reached!')
-        self._invoke_inspector_goal_reached()
+        if self._goal.id not in self._reached_goals:
+            self._reached_goals.append(self._goal.id)
+            self._active = False
+            self._move_base_client.stop_tracking_goal()
+            rospy.loginfo(f'movebaserunner: Token {self._goal.id} reached!')
+            self._invoke_inspector_goal_reached()
 
     def stop(self):
         self._move_base_client.cancel_all_goals()

@@ -26,6 +26,8 @@ class TokenInspector:
         self._runners = [RaspicamRunner(), self._movebaserunner, CustomRunner(), WallFollowerRunner()]
         rospy.loginfo('Init Inspector Done')
         rospy.on_shutdown(self._stop)
+        self.consecutive_goals_timer = None
+        self._receive_goals = True # do not accept goal_reached calls consecutively
 
     def keep_movin(self):
         while not rospy.is_shutdown():
@@ -59,7 +61,16 @@ class TokenInspector:
 
     def goal_reached(self):
         """ Called from the runners as soon they reach a goal """
-        self._next_goal:GimmeGoalResponse = self._request_goal(found_token=True)
+        if self._receive_goals:
+            self._receive_goals = False
+            rospy.logdebug('inspector: stop receiving goals')
+            self._next_goal:GimmeGoalResponse = self._request_goal(found_token=True)
+            self.consecutive_goals_timer = rospy.Timer(rospy.Duration(secs=1), self._accept_goals_again)
+
+    def _accept_goals_again(self, event):
+        rospy.logdebug('inspector: receive goals again')
+        self._receive_goals = True
+        self.consecutive_goals_timer.shutdown()
 
     def _stop(self):
         self._movebaserunner.stop()
