@@ -128,7 +128,7 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 The TurtleBot's software is divided into two main phases, each of which requires user input to start and end. The two phases work together to allow the TurtleBot to navigate through any given labyrinth (that meets the minimum requirements mentioned in [*Using the TurtleBot*](#using-the-turtlebot)), detect tokens, and ultimately plan a path through the labyrinth to reach each token in turn.
 
-Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is an important and encapsulated step to ensure that a correct map of the given maze has been generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates and an incomplete map would have been a more difficult and error-prone approach.  
+Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is an important and encapsulated step to ensure that a correct map of the given labyrinth has been generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates and an incomplete map would have been a more difficult and error-prone approach.  
 Once the map is generated, Phase 1 continues with the TurtleBot driving through the labyrinth again, this time with the goal of detecting tokens and storing their location based on the generated map. The TurtleBot uses the wall following approach to navigate and uses its token detection algorithm (see [*`token_detector` - Functional Principle*](#functional-principle) for more details) to identify each token it encounters and store its location. It will continue to do this until it has found the number of tokens specified by the user.
 
 Phase 2 -> todo
@@ -246,7 +246,7 @@ The main node contains the logic for creating an initial map of the labyrinth ba
 
 ###### Usage
 
-The `token_detector` node can be launched with running the following command on the TurtleBot:
+The `token_detector` node can be launched with running the following command on the remote computer:
 
 ```console
 $ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
@@ -277,7 +277,7 @@ Both the `PoseInMap` and `PoseTF` messages are used in other custom packages rel
 
 ##### Usage
 
-The `robot2map_conversion` node can be launched with running the following command on the TurtleBot:
+The `robot2map_conversion` node can be launched with running the following command on the remote computer:
 
 ```console
 $ roslaunch current_pos launch_transformer.launch
@@ -288,6 +288,40 @@ $ roslaunch current_pos launch_transformer.launch
 | Argument     | Default | Format   | Required | Description                                                          |
 |--------------|---------|----------|----------|----------------------------------------------------------------------|
 | `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
+
+### `amcl_localization` package
+
+##### Purpose
+
+"AMCL" stands for "Adaptive Monte Carlo Localisation". It is an algorithm used by the TurtleBot to autonomously determine its position within the labyrinth. This is particularly useful when the TurtleBot is placed at a random location within the labyrinth (a scenario known as the "kidnapped robot problem"), or after completing Phase 1 and starting Phase 2 (see [*Architecture*](#architecture)).
+
+##### Functional Principle
+
+The `amcl_localization` package heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
+To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`.
+
+In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, or for example the footprint of the TurtleBot itself.
+
+AMCL uses a combination of an existing map and sensor data (in this case data from the LiDAR sensor) to generate repeated estimates, or "particles", of a robot's position. The algorithm processes a continuous stream of sensor data to determine which particles match the observed surroundings and which can be ignored. New particles are generated that are closer to the actual position which eventually lead to a more or less certain position of the robot within the existing map. [^amcl]
+
+##### Usage
+
+The `amcl_localizer` node can be launched with running the following command on the remote computer:
+
+```console
+$ roslaunch amcl_localization custom_navigation.launch
+```
+
+***Note:*** When using a different map than the pre-defined development map, specify the path using the `map_file` argument.
+
+##### Arguments
+
+| Argument            | Default                                   | Format   | Required | Description                                                 |
+|---------------------|-------------------------------------------|----------|----------|-------------------------------------------------------------|
+| `map_file`          | `maps/3token_corner_d0.02/saved-map.yaml` | `string` | No       | Location of map file (relative to `token_inspector` package |
+| `open_rviz`         | `true`                                    | `bool`   | No       | Open Rviz, if `true`                                        |
+| `move_forward_only` | `false`                                   | `bool`   | No       | Only move forward, if `true`                                |
+
 
 #### `token_inspector` package
 
@@ -375,3 +409,5 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 
 [^tf-package]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
   See [`tf` package in ROS wiki](https://wiki.ros.org/tf)
+
+[^amcl]: ‘Adaptive Monte Carlo Localization’, Robotics Knowledgebase, Feb. 03, 2020. https://roboticsknowledgebase.com/wiki/state-estimation/adaptive-monte-carlo-localization/ (accessed Feb. 06, 2023).
