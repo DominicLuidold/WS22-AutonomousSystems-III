@@ -9,6 +9,7 @@ from current_pos.msg import PoseTF
 from token_inspector.srv import GimmePathLength, GimmePath
 
 TOLERANCE_TO_TARGET = 0.05
+GET_EVERY_NTH = 10
 
 class Pathfinder:
     def __init__(self):
@@ -50,10 +51,11 @@ class Pathfinder:
 
     def get_current_position(self):
         #use current_pos transform_position for receiving your position
-        return rospy.wait_for_message('pose_tf', PoseTF)
+        pose = rospy.wait_for_message('pose_tf', PoseTF)
+        return pose
 
     def handle_path_length(self, req):
-        rospy.logwarn('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logwarn('Received request for pathlength of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         rospy.logwarn(req)
         target = Pose()
         target.position.x = req.x
@@ -94,13 +96,22 @@ class Pathfinder:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def handle_path(self,req):
-        rospy.logerr('Received request from %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logerr('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y
         target.orientation.w = 1.0
-        resp = self.get_path_to_target(target)
+        resp:Path = self.get_path_to_target(target)
         # TODO: adapt path to target for nicer driving here
+        counter = 0
+        poses = []
+        for posestamped in resp.poses:
+            if counter >= GET_EVERY_NTH:
+                poses.append(posestamped)
+                counter = 0
+            counter += 1
+        resp.poses = poses
+        rospy.logwarn('Pathfinder initialized poses')
 
         return resp
 

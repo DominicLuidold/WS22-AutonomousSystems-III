@@ -25,8 +25,10 @@ class Scheduler:
         self.load_file()
 
         rospy.spin()
-    
+        rospy.on_shutdown(self.log_tokenpositions)
+
     def load_file(self):
+        tokenpositions = []
         if path.isfile(FILENAME):
             with open(FILENAME) as fp:
                 tokenpositions = json.load(fp)
@@ -45,7 +47,7 @@ class Scheduler:
 
         rospy.loginfo('Look for shortest A* path')
         token_distances = [] #(token, distance)
-
+        rospy.logwarn(self._tokenpositions)
         for id, token in self._tokenpositions.items():
             if not token['found']:
                 rospy.loginfo('Ask for distance to token: %s'%token['name'])
@@ -67,7 +69,7 @@ class Scheduler:
             else:
                 rospy.loginfo('Get first from ordered token_distances')
                 goal_token = token_distances[0]
-            
+            self._currentTag = goal_token[0]
             resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
             return resp
         else:
@@ -83,11 +85,15 @@ class Scheduler:
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)
 
+    def log_tokenpositions(self):
+        rospy.logwarn('Scheduler is being shut down, tokenpositions:')
+        rospy.logwarn(self._tokenpositions)
+
     def test_path_length(self):
         rospy.loginfo('Scheduler: started test for path length')
-        tokenid = 0
-        x = 0.136
-        y = -0.535
+        tokenid = 6
+        x = -0.4607
+        y = -0.5674
         token = {'name': tokenid, 'x': x, 'y': y}
 
         distance = self.get_path_length(token)

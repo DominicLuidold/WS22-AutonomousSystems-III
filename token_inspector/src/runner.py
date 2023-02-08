@@ -9,9 +9,9 @@ from current_pos.msg import PoseTF, PoseInMap
 from nav_msgs.msg import Path
 
 MAX_TOKEN_DISTANCE = 0.05
-FORWARD_SPEED = 0.22
+FORWARD_SPEED = 0.05
 MAX_ANGLE_DIFFERENCE_DEGREES = 0.5
-MAX_ANGULAR_VELOCITY = 0.1
+MAX_ANGULAR_VELOCITY = 0.5
 
 class Runner:
     def __init__(self):
@@ -65,6 +65,7 @@ class Runner:
     def drive_towards_target(self, target: PoseStamped): #target is of type Point
         self.turn_towards_target(target.pose.position)
         self.drive_straight_to_target(target.pose.position)
+        
 
     def is_robot_on_target(self, target: Point):
         try:
@@ -86,6 +87,7 @@ class Runner:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def turn_towards_target(self, target: Point):
+        rospy.logdebug('Runner: turn')
         current_pos = PoseTF()
         current_pos = self.get_current_position()
         current_pos_in_map = PoseInMap()
@@ -94,12 +96,15 @@ class Runner:
         angle_difference = self.get_angle_difference(current_pos_in_map.x, current_pos_in_map.y, current_pos_in_map.angle, target.x, target.y)
         max_angle_diff_radians = self.convert_to_radians(MAX_ANGLE_DIFFERENCE_DEGREES)
         while abs(angle_difference) > max_angle_diff_radians:
+            rospy.logdebug('Runner angle diff: %s'%angle_difference)
+
             #Calculate angular velocity
             constant_k_p = 1.0 #for smooth running
             angular_velocity = constant_k_p * angle_difference
             if abs(angular_velocity) > MAX_ANGULAR_VELOCITY:
                 angular_velocity = MAX_ANGULAR_VELOCITY
 
+            rospy.logerr('Runner angular velocity: %s'%angular_velocity)
             cmd_vel = Twist()
             cmd_vel.angular.z = angular_velocity
             self._movementPublisher.publish(cmd_vel)
@@ -108,22 +113,25 @@ class Runner:
             current_pos_in_map = current_pos.mapPose
             
             angle_difference = self.get_angle_difference(current_pos_in_map.x, current_pos_in_map.y, current_pos_in_map.angle, target.x, target.y)
-        return
+            rospy.Rate(10).sleep()
     
     def convert_to_radians(self, degree):
         return degree * (math.pi / 180)
     
     def get_current_position(self):
         #use current_pos transform_position for receiving your position
-        return rospy.wait_for_message('pose_tf', PoseTF)
+        pose = rospy.wait_for_message('pose_tf', PoseTF)
+        return pose
 
         
 
     def drive_straight_to_target(self, target):
+        rospy.loginfo('Runner: move forward')
         while not self.is_robot_on_target(target):
             cmd_vel = Twist()
             cmd_vel.linear.x = FORWARD_SPEED 
             self._movementPublisher.publish(cmd_vel)
+            rospy.Rate(10).sleep()
 
     def get_goal(self):
         rospy.loginfo('Get Goal')
