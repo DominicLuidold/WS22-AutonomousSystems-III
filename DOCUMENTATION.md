@@ -2,6 +2,128 @@
 
 <img src="documentation/TurtleBot3_SteFloDom.jpg" alt="Image of the `SteFloDom` TurtleBot 3" style="height: 500px" />
 
+## Getting Started
+
+This section will describe how to start, operate and use the TurtleBot project with step-by-step instructions.
+
+### Preparing the TurtleBot hardware
+
+To be able to run and start the TurtleBot, make sure the following components are either ready to use or nearby:
+* TurtleBot 3 identified by red tape with `SteFloDom` written on it
+* fully charged Li-Po battery
+    * if necessary, a suitable Li-Po battery charger and additional Li-Po batteries
+* at least one computer, laptop, or other device capable of running ROS
+* a network that both the computer and TurtleBot can connect to
+    * ***Note:*** The TurtleBot model in use only supports 2.4 GHz WiFi networks
+
+If all of the required components are ready, proceed with the following steps:
+1. Make sure the TurtleBot is currently turned off and no battery is connected
+    * Should any battery already be connected, make sure to turn of the TurtleBot by switching of the Raspberry Pi and then disconnect the currently connected battery
+2. Connect a fully charged Li-Po battery to the Li-Po battery extension cable, located at the bottom of the TurtleBot
+3. Turn on the TurtleBot by switching on the Raspberry Pi module
+
+Once the Raspberry Pi modules starts to light up, the rest of the TurtleBot (including the LiDAR sensor and the PixyCam) will start to boot up by either blinking or moving. Once the bootup has been completed (approximately 10-30 seconds), proceed with preparing the TurtleBot software.
+
+### Preparing the TurtleBot software
+
+#### First time setup
+
+Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the [General Setup](#general-setup).
+
+##### Remote Computer
+*The setup guide assumes that the operating system used is either a Linux distribution or that Windows Subsystem for Linux is used.*
+
+1. Determine the IP address of the computer
+2. Edit the `~/.bahsrc` file and set
+    * `ROS_HOSTNAME` with value `<ip-address>`
+    * `ROS_MASTER_URI` with value `http://<ip-address>:11311`
+3. Run
+    ```console
+    $ source ~/.bashrc
+    ```
+4. Run
+    ```console
+    $ sudo mkdir /killerrobot && sudo chmod 766 /killerrobot
+    ```
+
+##### TurtleBot
+1. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
+    * ***Note:*** If the TurtleBot isn't already connected to the new WiFi network, connect a keyboard and monitor directly to the TurtleBot's Raspberry Pi module and add the network's SSID and password accordingly.
+2. Determine the IP address of the TurtleBot
+3. Edit the `~/.bahsrc` file and set
+    * `ROS_HOSTNAME` with value `<turtlebot-ip-address>`
+    * `ROS_MASTER_URI` with value `http://<remote-pc-ip-address>:11311`
+4. Run
+    ```console
+    $ source ~/.bashrc
+    ```
+
+Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start):
+[![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
+
+#### General Setup
+
+##### PixyCam
+
+To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
+1. Place the PixyCam over a red token
+2. Press and hold the button until the LED turns white, then release when it turns red
+3. Move the camera away from the token
+4. Repeat `Step 1`, waiting for the LED to turn red
+    * ***Note:*** Very good lighting conditions are required for this
+5. Press the button once
+
+ ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality.
+
+##### Software
+
+To be able to run the software built into the TurtleBot, proceed with the following steps:
+1. Run `roscore` on the remote computer
+2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
+3. Run
+    ```console
+    $ roslaunch turtlebot3_bringup turtlebot3_robot.launch
+    ```
+4. Run (in a new terminal session)
+    ```console
+    $ roslaunch pixy_node pixy_usb.launch 
+    ```
+5. Run (in a new terminal session)
+    ```console
+    $ roslaunch raspicam_node camerav2_custom.launch
+    ```
+
+Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
+
+### Using the TurtleBot
+
+To start using the TurtleBot, proceed with the following steps:
+1. Create a labyrinth
+    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart.
+2. Follow the steps described in the [General Setup](#general-setup) chapter
+3. Have the remote computer with the compiled source code and packages ready
+
+#### Map labyrinth and detect tokens
+
+On the remote computer, run (in a new terminal):
+
+```console
+$ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
+```
+
+After the TurtleBot has completed the first round trip, the following message will be displayed in the terminal:
+```
+Initial roundtrip complete! Switched to different behaviors
+```
+
+The TurtleBot will then start following the left-hand side wall of the labyrinth, detecting all tokens and saving their positions in a reusable format.
+
+***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
+
+#### TODO -- TOKEN INSPECTOR -- TODO
+
+#### TODO -- INTERACTING WITH OTHER TEAM -- TODO
+
 ## Architecture
 
 ### Custom Modules
@@ -157,128 +279,6 @@ TODO
 
 * camera settings
 * slam parameter
-
-## Getting Started
-
-This section will describe how to start, operate and use the TurtleBot project with step-by-step instructions.
-
-### Preparing the TurtleBot hardware
-
-To be able to run and start the TurtleBot, make sure the following components are either ready to use or nearby:
-* TurtleBot 3 identified by red tape with `SteFloDom` written on it
-* fully charged Li-Po battery
-    * if necessary, a suitable Li-Po battery charger and additional Li-Po batteries
-* at least one computer, laptop, or other device capable of running ROS
-* a network that both the computer and TurtleBot can connect to
-    * ***Note:*** The TurtleBot model in use only supports 2.4 GHz WiFi networks
-
-If all of the required components are ready, proceed with the following steps:
-1. Make sure the TurtleBot is currently turned off and no battery is connected
-    * Should any battery already be connected, make sure to turn of the TurtleBot by switching of the Raspberry Pi and then disconnect the currently connected battery
-2. Connect a fully charged Li-Po battery to the Li-Po battery extension cable, located at the bottom of the TurtleBot
-3. Turn on the TurtleBot by switching on the Raspberry Pi module
-
-Once the Raspberry Pi modules starts to light up, the rest of the TurtleBot (including the LiDAR sensor and the PixyCam) will start to boot up by either blinking or moving. Once the bootup has been completed (approximately 10-30 seconds), proceed with preparing the TurtleBot software.
-
-### Preparing the TurtleBot software
-
-#### First time setup
-
-Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the [General Setup](#general-setup).
-
-##### Remote Computer
-*The setup guide assumes that the operating system used is either a Linux distribution or that Windows Subsystem for Linux is used.*
-
-1. Determine the IP address of the computer
-2. Edit the `~/.bahsrc` file and set
-    * `ROS_HOSTNAME` with value `<ip-address>`
-    * `ROS_MASTER_URI` with value `http://<ip-address>:11311`
-3. Run
-    ```console
-    $ source ~/.bashrc
-    ```
-4. Run
-    ```console
-    $ sudo mkdir /killerrobot && sudo chmod 766 /killerrobot
-    ```
-
-##### TurtleBot
-1. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
-    * ***Note:*** If the TurtleBot isn't already connected to the new WiFi network, connect a keyboard and monitor directly to the TurtleBot's Raspberry Pi module and add the network's SSID and password accordingly.
-2. Determine the IP address of the TurtleBot
-3. Edit the `~/.bahsrc` file and set
-    * `ROS_HOSTNAME` with value `<turtlebot-ip-address>`
-    * `ROS_MASTER_URI` with value `http://<remote-pc-ip-address>:11311`
-4. Run
-    ```console
-    $ source ~/.bashrc
-    ```
-
-Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start):
-[![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
-
-#### General Setup
-
-##### PixyCam
-
-To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
-1. Place the PixyCam over a red token
-2. Press and hold the button until the LED turns white, then release when it turns red
-3. Move the camera away from the token
-4. Repeat `Step 1`, waiting for the LED to turn red
-    * ***Note:*** Very good lighting conditions are required for this
-5. Press the button once
-
- ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality.
-
-##### Software
-
-To be able to run the software built into the TurtleBot, proceed with the following steps:
-1. Run `roscore` on the remote computer
-2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
-3. Run
-    ```console
-    $ roslaunch turtlebot3_bringup turtlebot3_robot.launch
-    ```
-4. Run (in a new terminal session)
-    ```console
-    $ roslaunch pixy_node pixy_usb.launch 
-    ```
-5. Run (in a new terminal session)
-    ```console
-    $ roslaunch raspicam_node camerav2_custom.launch
-    ```
-
-Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
-
-### Using the TurtleBot
-
-To start using the TurtleBot, proceed with the following steps:
-1. Create a labyrinth
-    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart.
-2. Follow the steps described in the [General Setup](#general-setup) chapter
-3. Have the remote computer with the compiled source code and packages ready
-
-#### Map labyrinth and detect tokens
-
-On the remote computer, run (in a new terminal):
-
-```console
-$ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
-```
-
-After the TurtleBot has completed the first round trip, the following message will be displayed in the terminal:
-```
-Initial roundtrip complete! Switched to different behaviors
-```
-
-The TurtleBot will then start following the left-hand side wall of the labyrinth, detecting all tokens and saving their positions in a reusable format.
-
-***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
-
-#### TODO -- TOKEN INSPECTOR -- TODO
-
-#### TODO -- INTERACTING WITH OTHER TEAM -- TODO
 
 ## Troubleshooting
 
