@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
 from helpers.helper import filtered_min
 from std_srvs.srv import Empty
 
-POSE_UNCERTAINTY_THRESHOLD = 0.005
+POSE_UNCERTAINTY_THRESHOLD = 0.007
 MIN_EXECUTION_TIME_SECS = 3 # follow wall at least for some seconds to avoid being finished immediately. The first estimate seems to be accurate often but is not
 
 class WallLocalizer:
@@ -17,12 +17,13 @@ class WallLocalizer:
         rospy.wait_for_service('global_localization')
         self._global_localisation = rospy.ServiceProxy('global_localization', Empty)
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._process_pose_estimation)
-        self._wall_follower = WallFollower()
+        self._wall_follower = WallFollower() # adapted wall follower implementation below
         self._is_localized = False
         self.pose = {'x': 0, 'y': 0, 'angle': 0}
         self.start_time = time.time()
         self._timer = rospy.Timer(rospy.Duration(MIN_EXECUTION_TIME_SECS), self._execution_timer_callback)
         self._execution_time_passed = False
+        rospy.logdebug('WallLocalizer initialized')
 
 
     def _process_pose_estimation(self, estimated_pose):
@@ -51,7 +52,7 @@ class WallLocalizer:
 
     def localize(self):
         self._global_localisation()
-        while not rospy.is_shutdown() and not (self._is_localized and self._execution_time_passed) :
+        while not rospy.is_shutdown() and not (self._is_localized and self._execution_time_passed):
             self._wall_follower.follow()
             rospy.Rate(10).sleep()
         
@@ -92,7 +93,7 @@ class WallFollower:
         move = Twist()
         move.linear.x = linear
         move.angular.z = angular
-        rospy.logdebug(f'pub {move.linear.x} {move.angular.z}')
+        #rospy.logdebug(f'pub {move.linear.x} {move.angular.z}')
         self._movement_publisher.publish(move)
 
 
@@ -105,7 +106,7 @@ class FindWall:
         return True
 
     def execute(self, dist, move) -> None:
-        rospy.logdebug('behavior: find wall')
+        #rospy.logdebug('behavior: find wall')
         move(0.1, 0.1)
 
 
@@ -119,7 +120,7 @@ class TurnTowardsWall:
         return dist['front'] > MAX_DETECTION_DIST and dist['front_left'] > MAX_DETECTION_DIST and dist['left'] <= MAX_DETECTION_DIST
 
     def execute(self, dist, move) -> None:
-        rospy.logdebug('behavior: turn towards wall')
+        #rospy.logdebug('behavior: turn towards wall')
         closeness_percent = max((1 - (dist['left'] - MIN_DETECTION_DIST) / (MAX_DETECTION_DIST - MIN_DETECTION_DIST)), 0.1)
         linear_velocity = MAX_SPEED * closeness_percent # the further away, the slower
         angular_velocity = closeness_percent
@@ -138,7 +139,7 @@ class FollowWall:
         return any(distance < MAX_DETECTION_DIST for distance in dist.values())
 
     def execute(self, distance, move) -> None:
-        rospy.logdebug('behavior: follow wall')
+        #rospy.logdebug('behavior: follow wall')
         linear_k = [1.5 * MAX_SPEED, 0, 0]
         angular_k = [-1, -0.4, 0.2]
         sensitivity_dist = [1.5 * MAX_DETECTION_DIST, MAX_DETECTION_DIST, MAX_DETECTION_DIST]

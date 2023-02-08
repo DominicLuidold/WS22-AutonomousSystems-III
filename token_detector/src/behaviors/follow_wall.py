@@ -2,7 +2,6 @@
 import math
 import rospy
 from helpers.helper import filtered_min
-from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 
 NUM_TOKENS = rospy.get_param('num_tokens')

@@ -1,4 +1,6 @@
 <launch>
+    <arg name="debug" default="false" doc="show debug messages if `true`" />
+    <param name="debug" type="bool" value="$(arg debug)" />
     <!--<node pkg="token_inspector" type="pathfinder.py" name="pathfinder" output="screen"></node>
     <node pkg="token_inspector" type="scheduler.py" name="scheduler" output="screen"></node>-->
     <node pkg="token_inspector" type="inspector.py" name="inspector" output="screen"></node>

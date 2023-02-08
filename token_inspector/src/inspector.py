@@ -6,15 +6,18 @@ from runners.wall_follower_runner import WallFollowerRunner
 from localizers.wall_localizer import WallLocalizer
 from token_inspector.srv import GimmeGoal, GimmeGoalResponse
 
+DEBUG = rospy.get_param('debug')
+log_level = rospy.DEBUG if DEBUG else rospy.INFO
+
 class TokenInspector:
     """
     Node that localizes itself in labyrinth, and visits goals within one after another
     """
 
     def __init__(self) -> None:
-        rospy.init_node('inspector', log_level=rospy.DEBUG, anonymous=True)
+        rospy.init_node('inspector', log_level=log_level, anonymous=True)
         rospy.loginfo('Init Inspector')
-        #self._localizer = WallLocalizer()
+        self._localizer = WallLocalizer()
         rospy.loginfo('token_inspector: wait for give goals service')
         rospy.wait_for_service('give_goals_service')
         self._gimmeGoals = rospy.ServiceProxy('give_goals_service', GimmeGoal)
@@ -47,6 +50,7 @@ class TokenInspector:
         try:
             goal:GimmeGoalResponse = self._gimmeGoals(-1 if found_token else -4711)
             if goal.id == -1: return None # -1 is code for: no more goals left
+            rospy.logerr(f'inspector: received goal {goal.id}')
             return goal
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)
