@@ -4,6 +4,7 @@ import rospy
 import os
 from current_pos.msg import PoseTF
 from helpers.helper import any_registered_token_within_distance
+from sound_play.msg import SoundRequest
 
 class CaptureToken:
   """ Register the token with coordinates """
@@ -11,6 +12,7 @@ class CaptureToken:
     self._killerrobot = killerrobot
     self._tagno = 0
     self._filename = "/killerrobot/token_positions.json"
+    self._playsound = rospy.Publisher('robotsound', SoundRequest, queue_size=10)
     if os.path.exists(self._filename):
       os.remove(self._filename)
 
@@ -18,6 +20,12 @@ class CaptureToken:
     """ if StepOntoToken just finished && token has not been registered yet """
     if self._killerrobot.isovertoken:
       self._killerrobot.isovertoken = False
+      #play sound
+      sound = SoundRequest()
+      sound.sound = sound.PLAY_START
+      sound.command = sound.PLAY_ONCE
+      sound.volume = 1.0
+      self._playsound.publish(sound)
       return True
     return False
 
@@ -51,3 +59,5 @@ class CaptureToken:
       json.dump(listobj, outfile, indent=3)
 
     self._tagno += 1
+
+
