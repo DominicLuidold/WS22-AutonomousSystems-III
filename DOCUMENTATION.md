@@ -336,5 +336,23 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 
 **Solution 2:** Consider replacing the malfunctioning LiDAR with a different, functional LiDAR module to determine if the issue is due to a faulty LiDAR.
 
+## Other
+
+### Raspberry Pi camera configuration
+
+To enhance the performance of the Raspberry Pi camera when detecting tokens and to avoid overheating, delays, and other limitations, the following configuration modifications were made:
+* reduced the resolution from `1280x960` to `410x308` pixels.
+* set the `saturation` value to `70`.
+* changed the white balance mode (`awb_mode`) to `incandescent`.
+
+```xml
+<param name="saturation" value="70"/>
+<param name="awb_mode" value="incandescent"/>
+```
+
+For customizing the camera configuration, two following two files are necessary which both have been originally copied over from the `camerav2_410x308` launch file pendants that were later adapted:
+* `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
+* `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
+
 [^1]: *"tf is a package that lets the user keep track of multiple coordinate frames over time. tf maintains the relationship between coordinate frames in a tree structure buffered in time, and lets the user transform points, vectors, etc between any two coordinate frames at any desired point in time."*.  
   See [`tf` package in ROS wiki](https://wiki.ros.org/tf)

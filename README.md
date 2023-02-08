@@ -2,17 +2,7 @@
 ## Mapping and Detection Phase
 
 ### Raspicam Configuration
-For customizing the camera configuration, two following two files are necessary:
-- ~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch
-- ~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml
-
-Both are originally copied from the camerav2_410x308 pendants and later adapted.
-
-Due to overheating and massive delays, the raspicam resolution needed to be reduced massively from initially planned 1280x960 to 410x308. Tweaking the token detection accuracy with ```rosrun rqt_reconfigure rqt_reconfigure``` we found that it works best, if saturation property is upped to 70 and the white balance mode (awb_mode) is kept fixed at incandescent in the camerav2_custom.launch file. Mode auto results in one giant red token if the robots stands directly (very close) in front of the wall.
-```
-<param name="saturation" value="70"/>
-<param name="awb_mode" value="incandescent"/>
-```
+Moved to doc
 
 ## Localization and Navigation
 
