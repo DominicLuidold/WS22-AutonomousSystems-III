@@ -174,6 +174,7 @@ include_directories(
    src/send_goal.py
    src/pathfinder.py
    src/inspector.py
+   src/runner.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

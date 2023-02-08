@@ -13,14 +13,16 @@ class TokenInspector:
 
     def __init__(self) -> None:
         rospy.init_node('inspector', log_level=rospy.DEBUG, anonymous=True)
-        rospy.logerr('Init Inspector')
+        rospy.loginfo('Init Inspector')
         #self._localizer = WallLocalizer()
-        rospy.logerr('token_inspector: wait for give goals service')
+        rospy.loginfo('token_inspector: wait for give goals service')
         rospy.wait_for_service('give_goals_service')
         self._gimmeGoals = rospy.ServiceProxy('give_goals_service', GimmeGoal)
         rospy.logerr('token_inspector: give goals service up')
-        self._runners = [RaspicamRunner(), MoveBaseRunner(self.goal_reached), CustomRunner(), WallFollowerRunner()]
+        self._movebaserunner = MoveBaseRunner(self.goal_reached)
+        self._runners = [RaspicamRunner(), self._movebaserunner, CustomRunner(), WallFollowerRunner()]
         rospy.loginfo('Init Inspector Done')
+        rospy.on_shutdown(self._stop)
 
     def keep_movin(self):
         while not rospy.is_shutdown():
@@ -32,7 +34,9 @@ class TokenInspector:
                         r.run(self._next_goal)
                         break
                 rospy.Rate(10).sleep()
-            rospy.loginfo('Finished')
+            rospy.loginfo('Inspector Finished')
+            self._stop()
+            break
 
 
     def _request_goal(self, found_token:bool=False) -> GimmeGoalResponse:
@@ -53,7 +57,8 @@ class TokenInspector:
         """ Called from the runners as soon they reach a goal """
         self._next_goal:GimmeGoalResponse = self._request_goal(found_token=True)
 
-
+    def _stop(self):
+        self._movebaserunner.stop()
 
 def main():
     try:

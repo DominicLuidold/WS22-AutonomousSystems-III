@@ -15,3 +15,6 @@ def any_registered_token_within_distance(estimated_token_map_pose: PoseInMap, re
     if eucl_dist < distance_threshold:
       return True
   return False
+
+def eucl_distance(x1, y1, x2, y2):
+  return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
