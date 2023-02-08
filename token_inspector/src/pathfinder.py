@@ -26,7 +26,7 @@ NW = add(N, W)
 NE = add(N, E)
 SW = add(S, W)
 SE = add(S, E)
-cardinals = [N, NE, E, SE, S, SW, W, NW]
+CARDINALS = [N, NE, E, SE, S, SW, W, NW]
 
 class Pathfinder:
     def __init__(self):
@@ -63,11 +63,19 @@ class Pathfinder:
         rospy.loginfo('Received path')
         return response.plan
 
-    def get_a_star_path(self, start, target, tolerance: int) -> Path:
+    def get_a_star_path(self, start, target, tolerance: float) -> Path:
         costmapMsg = rospy.wait_for_message("/move_base/global_costmap/costmap", OccupancyGrid)
         costmap = np.array(costmapMsg.data, dtype=np.int8).reshape(costmapMsg.info.height, costmapMsg.info.width)
         rospy.logerr('a_star: costmap received')
         np.savetxt('/killerrobot/path.txt', costmap)
+
+        #for testing
+        #cell = AStar.SearchNode(start, gscore=.0, fscore=self.euclideanDistanceBetweenCells(start, target))
+        #neighbors = self.neighborsForCell(costmap, cell)
+        #rospy.logerr('Pathfinder getastarpath: %s'%neighbors)
+        rospy.logwarn('Pathfinder getastarpath: %s %s'%start)
+        rospy.logerr(costmap[start[0], start[1]])
+        
         path = list(find_path(
             start=start,
             goal=target,
@@ -76,13 +84,15 @@ class Pathfinder:
             heuristic_cost_estimate_fnct=self.euclideanDistanceBetweenCells,
             distance_between_fnct= lambda a, b: self.costBetween(a, b, costmap, costmapMsg.info),
             is_goal_reached_fnct=lambda a, b: abs(a[0] - b[0]) < tolerance and abs(a[1] - b[1]) < tolerance))
+        
         rospy.logwarn(path)
         return path
 
 
-    def neighborsForCell(self, cm, cell):
+    def neighborsForCell(self, cm, cell): #cm = costmap
+        rospy.logdebug('Pathfinder astar neighborsForCell: cm = %s ... cell = %s'%(cm,cell))
         l = []
-        for direction in cardinals:
+        for direction in CARDINALS:
             target = add(cell, direction)
             try:
                 if cm[target[0]][target[1]] < self.neighbourThreshold:
@@ -299,12 +309,24 @@ class AStar:
         openSet = []
         heappush(openSet, startNode)
         while openSet:
-            current = heappop(openSet)
+            rospy.loginfo('Pathfinder astar: openset')
+            current: AStar.SearchNode = heappop(openSet)
+            rospy.loginfo('Pathfinder astar: %s  =  %s'%(current.data, goal))
+            rospy.loginfo(current)
             if self.is_goal_reached(current.data, goal):
+                rospy.logdebug('pathfinder astar: goal reached')
                 return self.reconstruct_path(current, reversePath)
+
             current.out_openset = True
             current.closed = True
-            for neighbor in map(lambda n: searchNodes[n], self.neighbors(current.data)):
+            neighbors = self.neighbors(current.data)
+            if len(neighbors) == 0:
+                rospy.logwarn('pathfinder astar: neighbors is empty')
+            mapofnodeswithneighbors = map(lambda n: searchNodes[n], neighbors)
+            for neighbor in mapofnodeswithneighbors:
+                rospy.logwarn('pathfinder astar: iterating through map')
+                rospy.logwarn(neighbor)
+                
                 if neighbor.closed:
                     continue
                 tentative_gscore = current.gscore + \
@@ -322,6 +344,7 @@ class AStar:
                     # re-add the node in order to re-sort the heap
                     openSet.remove(neighbor)
                     heappush(openSet, neighbor)
+        rospy.loginfo('Return none')
         return None
 
 
