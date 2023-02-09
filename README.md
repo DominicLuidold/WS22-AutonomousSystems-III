@@ -264,9 +264,9 @@ The closest grid point is then calculated by finding the euclidean distance betw
 
 </details>
 
-To know whether a token has already been registered, the `any_registered_token_within_distance` helper function is used that takes an estimated token map pose, a list of registered tokens, and a distance threshold as input and returns information whether there is any already registered token that is closer in Euclidean distance to the estimated token than the given distance threshold.
+To know whether a token has already been registered, the `any_registered_token_within_distance` helper function is used that takes an estimated token map pose, a list of registered tokens and a distance threshold as input and returns information on wether there is any already registered token that is closer in Euclidean distance to the estimated token than the given distance threshold.
 
-The `MoveTowardsToken` behavior includes parts of the `WallFollower` logic to prevent driving too close or crashing into a wall while steering towards a detected token. For improved accuracy, instead of just the front, front-left, and left surroundings, the complete 360° range of the LiDAR is used.
+The `MoveTowardsToken` behavior includes parts of the `WallFollower` logic to prevent driving too close or crashing into a wall while steering towards a detected token. For improved accuracy, instead of just the front, front-left and left surroundings, the complete 360° range of the LiDAR is used.
 
 </details>
 
@@ -275,7 +275,7 @@ The `MoveTowardsToken` behavior includes parts of the `WallFollower` logic to pr
 
 The `WallFollower` behavior is internally controlled by two different classes, namely `TurnTowardsWall` and `FollowWall`, as well as a `RoundtripMonitor` class responsible for switching behaviors once the TurtleBot has completed the first round trip.
 
-The `TurnTowardsWall` logic turns towards a wall if the wall is not in front of the robot but is on its left. This is determined by checking the distance to the wall in front, front_left, and left directions using the LiDAR data published to the `/scan` topic. If the wall is on its left, the robot turns left towards the wall. The speed of the turn is determined by the distance to the wall. The closer the robot is to the wall, the slower the turn.
+The `TurnTowardsWall` logic turns towards a wall if the wall is not in front of the robot but on its left. This is determined by checking the distance to the wall in front, front_left and left directions using the LiDAR data published to the `/scan` topic. If the wall is on its left, the robot turns left towards the wall. The speed of the turn is determined by the distance to the wall. The closer the robot is to the wall, the slower the turn.
 
 The `FollowWall` logic instructs the TurtleBot to move forward and turn slightly left to keep the wall on its left side. The speed of the robot and the degree of the turn is determined by the distance to the wall in front, front_left, and left directions. The closer the robot is to the wall, the slower it moves and the sharper the turn. Comparable to the `TurnTowardsWall` logic, the `/scan` topic is used to get the LiDAR data.
 
@@ -287,11 +287,11 @@ To determine whether the current position is near the starting area of the round
 <details>
 <summary><code>FindWall</code> behavior description</summary>
 
-The `FindWall` behavior has the lowest priority among the five available behaviors and is only executed when none of the other behaviors are applicable. When this behavior is triggered, the TurtleBot uses the `/cmd_vel` topic to move slowly towards a wall until it reaches one, at which point control is transferred to another behavior.
+The `FindWall` behavior has the lowest priority among the five available behaviors and is only executed when none of the other behaviors are applicable. When this behavior is triggered, the TurtleBot uses the `/cmd_vel` topic to move with a slight left curve ahead until it reaches a wall, at which point th control is transferred to another behavior.
 
 </details>
 
-The main node contains the logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop upon which user interaction is required.
+The main node contains the logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop. Then the turtlebot awaits user interaction.
 
 ###### Usage
 
@@ -313,7 +313,7 @@ $ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
 
 ##### Purpose
 
-The `current_pos` package contains the necessary files and logic for converting the TurtleBot's position, as determined from Odometry data, to a coordinate representation within the map's coordinate system.
+The `current_pos` package contains the necessary files and logic for converting the TurtleBot's position, as determined from odometry data, to a coordinate representation within the map's coordinate system.
 
 ##### Functional Principle
 
@@ -340,7 +340,7 @@ $ roslaunch current_pos launch_transformer.launch
 
 #### `token_inspector` package
 
-The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive to the tokens in the order they were found, regardless of where the TurtleBot is placed.
+The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive to towards the closest token, regardless of where the TurtleBot is placed.
 
 The `token_inspector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth:
 
@@ -368,11 +368,11 @@ As a first step, the `inspector` node creates an instance of the `WallLocalizer`
 The `WallLocalizer` class heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
 To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`. These two measurments have been introduced to improve the accuracy of the AMCL algorithm as shorter or too long execution times might result in wrong localization results.
 
-In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, or for example the footprint of the TurtleBot itself.
+In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, such as the footprint of the TurtleBot itself.
 
 AMCL uses a combination of an existing map and sensor data (in this case data from the LiDAR sensor) to generate repeated estimates, or "particles", of a robot's position. The algorithm processes the continuous stream of sensor data it receives to determine which particles match the observed surroundings and which can be ignored. New particles are generated that are closer to the actual position while moving, which eventually lead to a more or less certain position of the robot within the existing map. [^amcl]
 
-AMCL's covariance matrix describes the uncertainty across 6 dimensions. We are only interested in the diagonal values as the values do not correlate at all. `z`, `roll` and `pitch` can not occur in our robot world, so this leaves only `x`, `y` and `yaw` (rotation around the `z` axis). The robot follows the wall until it is certain for all three values (meaning the value is below threshold).
+AMCL's covariance matrix describes the uncertainty across 6 dimensions. We are only interested in the diagonal values as the values do not correlate at all. `z`, `roll` and `pitch` can not occur in our robot world, so this leaves only `x`, `y` and `yaw` (rotation around the `z` axis). The robot follows the wall until it is certain of the accuracy of all three values (meaning the value is below threshold).
 
 ```python
 [
@@ -405,7 +405,7 @@ $ roslaunch amcl_localization custom_navigation.launch
 
 </details>
 
-After the TurtleBot has successfully localized itself within the labyrinth, the `inspector` node continuously communicates with the `scheduler_server` node (using custom `GimmeGoal` and `GimmeGoalResponse` messages (refer to [*`scheduler_server` node*](#scheduler_server-node))) to receive the next target token. The target token is then passed on to a set of specialized runners responsible for navigating to the token within the labyrinth.  
+After the TurtleBot has successfully localized itself within the labyrinth, the `inspector` node communicates with the `scheduler_server` node (using custom `GimmeGoal` and `GimmeGoalResponse` messages (refer to [*`scheduler_server` node*](#scheduler_server-node))) to receive the next target token. The target token is then passed on to a set of specialized runners responsible for navigating to the token within the labyrinth.  
 Somewhat comparable to the behaviors implemented in the [*`token_detector` package*](#token_detector-package), the `inspector` node uses different runner implementations to reach the next token:
 * `MoveBaseRunner` as the main runner based on `move_base`
 * `WallFollowerRunner` as "backup", should the `MoveBaserRunner` fail to reach the token for more than 10 consecutive tries
@@ -425,11 +425,11 @@ The `MoveBaserRunner` relies on three different packages:
 as well as the internal `pathfinder` node (see [*`pathfinder`*](#pathfinder-node)).
 
 The runner makes usage of the standardized communcation model (implemented by `action_lib`) of providing a `MoveBaseGoal` to the `move_base`'s `ActionClient`, reacting to `MoveBaseFeedback` and `MoveBaseResult` messages.  
-In particular, the runner creates a new `MoveBaseGoal` using the token's `x` and `y` coordinates and waits for the continuous `MoveBaseFeedback` messages to determine whether the TurtleBot is near the token's position using the euclidian distance as measurment.
+In particular, the runner creates a new `MoveBaseGoal` using the token's `x` and `y` coordinates and waits for the continuous `MoveBaseFeedback` messages to determine whether the TurtleBot is near the token's position using the euclidian distance as measurement.
 
 The `MoveBaserRunner` differentiates between two different states that the `MoveBaseResult` messages returns, indicating that `move_base` has stopped tracking the goal:
 * `GoalStatus.SUCCEEDED` implying that the TurtleBot has reached the targeted token
-* Any other `GoalStatus` status, which counts toward an internal failure count
+* Any other `GoalStatus` status, which counts towards an internal failure count
 
 Should the internal failure count fail for more than 10 (consecutive) times, the runner disables itself preemtively to avoid any further runs not resulting in finding the specified token. As a result, the `WallFollowerRunner` will get called by the `inspector` node to guarantee that the targeted token will get reached.
 
