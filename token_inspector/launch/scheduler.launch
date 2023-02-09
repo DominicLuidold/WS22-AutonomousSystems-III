@@ -1,5 +1,5 @@
 <launch>
-    <arg name="tokens_file" default="$(find token_inspector)/maps/3token_corner_d0.02/token_positions.json"/>
+    <arg name="tokens_file" default="/killerrobot/token_positions.json"/>
     <param name="tokens_file" value="$(arg tokens_file)" />
     <node pkg="token_inspector" type="scheduler.py" name="scheduler" output="screen"></node>
 </launch>
