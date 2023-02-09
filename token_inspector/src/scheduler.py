@@ -16,15 +16,14 @@ class Scheduler:
         rospy.loginfo('Init Scheduler Server')
         self._giveGoalsService = rospy.Service('give_goals_service', GimmeGoal, self.handle_goal_scheduling)
         
-        #rospy.wait_for_service('provide_path_length_service')
-        #rospy.loginfo('Found provide_path_length_service')
-        #self._gimmePathLength = rospy.ServiceProxy('provide_path_length_service', GimmePathLength)
+        rospy.wait_for_service('provide_path_length_service')
+        rospy.loginfo('Found provide_path_length_service')
+        self._gimmePathLength = rospy.ServiceProxy('provide_path_length_service', GimmePathLength)
         self._currentTag = -1
         self._tokenpositions = {}
         self.load_file()
-        rospy.on_shutdown(self.log_tokenpositions)
-        rospy.loginfo('Init Scheduler Server done')
         rospy.spin()
+        rospy.loginfo('Init Scheduler Server done')
 
     def load_file(self):
         tokenpositions = []
@@ -71,7 +70,7 @@ class Scheduler:
             self._currentTag = goal_token[0]
             resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
             rospy.loginfo(f'Scheduler: Approach goal {resp}')
-            return resp
+            return resp.path_length
         else:
             rospy.loginfo('All Tokens have been seen')
             return GimmeGoalResponse(-1, 0.0, 0.0)
@@ -79,8 +78,8 @@ class Scheduler:
     def get_path_length(self, token):
         rospy.loginfo('Get pathlength of token %s'%token['name'])
         try:
-            #resp = self._gimmePathLength(token['name'], token['x'], token['y'])
-            #rospy.loginfo('Path length to token %s is: %s'%(token['name'],resp.path_length))
+            resp = self._gimmePathLength(token['name'], token['x'], token['y'])
+            rospy.loginfo('Path length to token %s is: %s'%(token['name'],resp.path_length))
             return token['name'], 1
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)

@@ -26,7 +26,7 @@ class CaptureToken:
     rospy.logdebug('behavior: capture_token')
     pos = rospy.wait_for_message("pose_tf", PoseTF)
     pose = self._killerrobot.pose
-    if any_registered_token_within_distance(pose, self._killerrobot.tokens, 0.15):
+    if any_registered_token_within_distance(pose, self._killerrobot.tokens, 0.2):
       rospy.logwarn(f'token at {pose.x}, {pose.y} not registered because it is has already been captured')
       return
     rospy.loginfo(f'capturing token at {pose.x}, {pose.y} with id {self._tagno}')

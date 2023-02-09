@@ -6,6 +6,7 @@ import math
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import CompressedImage, Image
 
+ignore_tokens_above_pixels_y = 55
 class RaspicamDetector:
 
   def __init__(self):
@@ -74,6 +75,8 @@ class RaspicamDetector:
     tokens = np.empty((0, 4), float)
     for contour in contours:
       center = self.calculate_token_center(cv.convexHull(contour))
+      if center[1] < ignore_tokens_above_pixels_y:
+        continue
       tokens = np.append(tokens, np.array([center]), axis=0)
     tokens = self.sort_tokens_by_distance(tokens)
     tokens = self.set_angle_of_tokens(tokens)
