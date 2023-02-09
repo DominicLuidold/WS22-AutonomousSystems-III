@@ -123,7 +123,7 @@ class Pathfinder:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def handle_path(self,req):
-        rospy.logerr('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.loginfo('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y

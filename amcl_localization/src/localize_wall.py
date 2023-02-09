@@ -39,7 +39,7 @@ class WallLocalizer:
             xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
             self._is_localized = all([abs(certainty) < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
             if self._is_localized: 
-                rospy.logerr('Localization complete!')
+                rospy.loginfo('Localization complete!')
 
 
     def _execution_timer_callback(self, event):

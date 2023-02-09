@@ -16,13 +16,13 @@ class WallLocalizer:
     def __init__(self) -> None:
         rospy.wait_for_service('global_localization')
         self._global_localisation = rospy.ServiceProxy('global_localization', Empty)
+        self._execution_time_passed = False
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self._process_pose_estimation)
         self._wall_follower = WallFollower() # adapted wall follower implementation below
         self._is_localized = False
         self.pose = {'x': 0, 'y': 0, 'angle': 0}
         self.start_time = time.time()
         self._timer = rospy.Timer(rospy.Duration(MIN_EXECUTION_TIME_SECS), self._execution_timer_callback)
-        self._execution_time_passed = False
         rospy.logdebug('WallLocalizer initialized')
 
 
@@ -39,7 +39,7 @@ class WallLocalizer:
             xyyaw = [cov[0], cov[6], cov[-1]] # x, y, yaw (rotation)
             self._is_localized = all([abs(certainty) < POSE_UNCERTAINTY_THRESHOLD for certainty in xyyaw])
             if self._is_localized: 
-                rospy.logerr('Localization complete!')
+                rospy.loginfo('Localization complete!')
 
 
     def _execution_timer_callback(self, event):
