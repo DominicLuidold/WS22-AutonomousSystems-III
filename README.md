@@ -119,10 +119,10 @@ Once all steps have been executed, the general setup is completed and the Turtle
 To start using the TurtleBot, proceed with the following steps:
 1. Create a labyrinth
     * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart and not closer to the wall than 15cm.
-2. Follow the steps described in the [General Setup](#general-setup) chapter
+2. Follow the steps described in the [*General Setup*](#general-setup) chapter
 3. Have the remote computer with the compiled source code and packages ready
 
-#### Map labyrinth and detect tokens
+#### Phase 1 - Map labyrinth and detect tokens
 
 On the remote computer, run (in a new terminal):
 
@@ -139,7 +139,7 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 ***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
 
-#### TODO -- TOKEN INSPECTOR -- TODO
+#### Phase 2 - TODO
 
 ## Architecture
 
@@ -148,7 +148,8 @@ The TurtleBot's software is divided into two main phases, each of which requires
 Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is an important and encapsulated step to ensure that a correct map of the given labyrinth has been generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates and an incomplete map would have been a more difficult and error-prone approach.  
 Once the map is generated, Phase 1 continues with the TurtleBot driving through the labyrinth again, this time with the goal of detecting tokens and storing their location based on the generated map. The TurtleBot uses the wall following approach to navigate and uses its token detection algorithm (see [*`token_detector` - Functional Principle*](#functional-principle) for more details) to identify each token it encounters and store its location. It will continue to do this until it has found the number of tokens specified by the user.
 
-Phase 2 -> todo
+Phase 2 of the process involves the use of the `token_inspector` package. Its primary goal is to locate the TurtleBot within the labyrinth and plan a path to collect each token in turn. In the first step, the TurtleBot uses the `Advanced Monte Carlo Localisation` algorithm (see [*`inspector_node` - AMCL*](#inspector-node) for more details) to determine its location within the labyrinth. This allows it to start from any point within the labyrinth, effectively solving the kidnapped robot problem.  
+Once the TurtleBot has located itself, it uses a goal scheduling algorithm based on the ROS service server-client architecture to obtain new token goals. This algorithm relies on a main runner and a backup runner (see [*`inspector_node`*](#inspector-node) for more details), which provide different strategies for reaching each token with a planned path based on the shortest distances between them. Finally, the TurtleBot runs through the labyrinth until it has collected all the tokens.
 
 ### Custom Modules
 
@@ -442,7 +443,7 @@ When a service call is received, mainly from the `inspector` node acting as a RO
 
 The communication between the service server and client is accomplished by using the customm implemented messages
 * `GimmeGoal` containing the `id_found`; `GimmeGoalResponse` containing the `id`, `x` and `y` coordinates
-* `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` as response
+* `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` message as response
 * `GimmePathLength` containing the token's `id`, `x` and `y` coordinates with a `path_length` (represented by a `float`) as response
 
 ###### Usage
