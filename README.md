@@ -33,11 +33,11 @@ To be able to run and start the TurtleBot, make sure the following components ar
 
 If all of the required components are ready, proceed with the following steps:
 1. Make sure the TurtleBot is currently turned off and no battery is connected
-    * Should any battery already be connected, make sure to turn of the TurtleBot by switching of the Raspberry Pi and then disconnect the currently connected battery
+    * Should any battery already be connected, make sure to turn off the TurtleBot by switching off the Raspberry Pi and then disconnect the currently connected battery
 2. Connect a fully charged Li-Po battery to the Li-Po battery extension cable, located at the bottom of the TurtleBot
 3. Turn on the TurtleBot by switching on the Raspberry Pi module
 
-Once the Raspberry Pi modules starts to light up, the rest of the TurtleBot (including the LiDAR sensor and the PixyCam) will start to boot up by either blinking or moving. Once the bootup has been completed (approximately 10-30 seconds), proceed with preparing the TurtleBot software.
+Once the Raspberry Pi modules start to light up, the rest of the TurtleBot (including the LiDAR sensor and the PixyCam) will start to boot up by either blinking or moving. Once the bootup has been completed (approximately 10-30 seconds), proceed with preparing the TurtleBot software.
 
 ### Preparing the TurtleBot software
 
@@ -46,11 +46,11 @@ Once the Raspberry Pi modules starts to light up, the rest of the TurtleBot (inc
 Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the [General Setup](#general-setup).
 
 ##### Remote Computer
-*The setup guide assumes that the operating system used is either a Linux distribution or that Windows Subsystem for Linux is used.*
+*The setup guide assumes that the operating system used is either a Linux distribution or that a Linux VM running on Windows is used, you either use the commands in the linux terminal or connect to the system via ssh.*
 
 1. Determine the IP address of the computer
 2. Edit the `~/.bahsrc` file and set
-    * `ROS_HOSTNAME` with value `<ip-address>`
+    * `ROS_HOSTNAME` with value `<ip-address>` (we used `$(ip route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')` because of changing networks)
     * `ROS_MASTER_URI` with value `http://<ip-address>:11311`
 3. Run
     ```console
@@ -66,7 +66,7 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
     * ***Note:*** If the TurtleBot isn't already connected to the new WiFi network, connect a keyboard and monitor directly to the TurtleBot's Raspberry Pi module and add the network's SSID and password accordingly.
 2. Determine the IP address of the TurtleBot
 3. Edit the `~/.bahsrc` file and set
-    * `ROS_HOSTNAME` with value `<turtlebot-ip-address>`
+    * `ROS_HOSTNAME` with value `<turtlebot-ip-address>` (we used `$(ip route get 8.8.8.8 | awk -F"src " 'NR==1{split($2,a," ");print a[1]}')` because of changing networks)
     * `ROS_MASTER_URI` with value `http://<remote-pc-ip-address>:11311`
 4. Run
     ```console
@@ -82,11 +82,11 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 
 To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
 1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom, facing the surface, it comes to wrong color appearance if a light shines on it.
-2. Place the PixyCam over a red token
-3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red
-4. Move the camera over a the token (results are best real conditions are reproduced - put the turtlebot on the ground, pixycam directly over a token)
-    * ***Note:*** The better the lighting conditions the better
-6. Press the button once
+2. Place the PixyCam over a red token.
+3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red.
+4. Move the camera over a the token. (results are best when real conditions are reproduced - put the turtlebot on the ground wth the pixycam directly over a token)
+    * ***Note:*** Stable and bright lighting conditions lead to the best results.
+6. Press the button once.
 7. Make sure that tokens are detected: Hovering over a token makes the LED turn red (can be seen from above through little holes) and moving away the PixyCam turns off the LED. Make sure that the light is steady and not flickering, otherwise repeat the process.
 
  ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality. Use the PixyMon tool for the initial calibration!
@@ -137,15 +137,15 @@ Initial roundtrip complete! Switched to different behaviors
 
 The TurtleBot will then start following the left-hand side wall of the labyrinth, detecting all tokens and saving their positions in a reusable format.
 
-***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
+***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. When the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
 
 #### Phase 2 - TODO
 
 ## Architecture
 
-The TurtleBot's software is divided into two main phases, each of which requires user input to start and end. The two phases work together to allow the TurtleBot to navigate through any given labyrinth (that meets the minimum requirements mentioned in [*Using the TurtleBot*](#using-the-turtlebot)), detect tokens, and ultimately plan a path through the labyrinth to reach each token in turn.
+As the task for is divided into two main phases, so has our solution two main parts, each of which requires user input to start and end. The two parts work together to allow the TurtleBot to navigate through any given labyrinth (that meets the minimum requirements mentioned in [*Using the TurtleBot*](#using-the-turtlebot)), detect tokens, and ultimately plan a path through the labyrinth to reach each token.
 
-Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is an important and encapsulated step to ensure that a correct map of the given labyrinth has been generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates and an incomplete map would have been a more difficult and error-prone approach.  
+Phase 1, using the `token_detector` package, is the first step in this process. Its primary function is to generate a map of the labyrinth by following the wall on the left and making a full round trip through the labyrinth. During this phase, the TurtleBot travels through the labyrinth and collects LiDAR data about its surroundings, using this information to construct a map of the labyrinth. This map is then stored for future use. The first round trip of Phase 1 is important to ensure that a correct map of the given labyrinth is generated and saved before proceeding with any further steps, as this will be used as the basis for all further operations. Detecting tokens while creating a map would have been possible, but accurately transforming the location based on the TurtleBot's coordinates in an incomplete map would have been a more difficult and error-prone approach.  
 Once the map is generated, Phase 1 continues with the TurtleBot driving through the labyrinth again, this time with the goal of detecting tokens and storing their location based on the generated map. The TurtleBot uses the wall following approach to navigate and uses its token detection algorithm (see [*`token_detector` - Functional Principle*](#functional-principle) for more details) to identify each token it encounters and store its location. It will continue to do this until it has found the number of tokens specified by the user.
 
 Phase 2 of the process involves the use of the `token_inspector` package. Its primary goal is to locate the TurtleBot within the labyrinth and plan a path to collect each token in turn. In the first step, the TurtleBot uses the `Advanced Monte Carlo Localisation` algorithm (see [*`inspector_node` - AMCL*](#inspector-node) for more details) to determine its location within the labyrinth. This allows it to start from any point within the labyrinth, effectively solving the kidnapped robot problem.  
