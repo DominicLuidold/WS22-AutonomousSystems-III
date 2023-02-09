@@ -66,14 +66,15 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 ##### PixyCam
 
 To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
-1. Place the PixyCam over a red token
-2. Press and hold the button until the LED turns white, then release when it turns red
-3. Move the camera away from the token
-4. Repeat `Step 1`, waiting for the LED to turn red
-    * ***Note:*** Very good lighting conditions are required for this
-5. Press the button once
+1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the pixycam is placed at the bottom facing the surface it comes to wrong color appearance if a light shines on it.
+2. Place the PixyCam over a red token
+3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red
+4. Move the camera over a the token (results are best real conditions are reproduced - put the turtlebot on the ground, pixycam directly over a token)
+    * ***Note:*** The better the lighting conditions the better
+6. Press the button once
+7. Make sure that tokens are detected: Hovering over a token makes the LED turn red (can be seen from above through little holes) and moving away the pixycam turns off the LED. Make sure that the light is steady and not flickering -> repeat process
 
- ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality.
+ ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality. Use the PixyMon tool for the initial calibration!
 
 ##### Software
 
@@ -83,21 +84,17 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     $  roscore
     ```
 2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
-3. Run
+3. Run (on turtlebot)
     ```console
     $ roslaunch turtlebot3_bringup turtlebot3_robot.launch
     ```
-4. Run (in a new terminal session)
+4. Run (in a new terminal session on the turtlebot)
     ```console
     $ roslaunch pixy_node pixy_usb.launch 
     ```
-5. Run (in a new terminal session)
+5. Run (in a new terminal session on the robot)
     ```console
     $ roslaunch raspicam_node camerav2_custom.launch
-    ```
-6. Run (in a new terminal session)
-    ```console
-    $ roslaunch current_pos launch_transformer.launch
     ```
 
 Once all steps have been executed, the general setup is completed and the TurtleBot is ready.
@@ -106,7 +103,7 @@ Once all steps have been executed, the general setup is completed and the Turtle
 
 To start using the TurtleBot, proceed with the following steps:
 1. Create a labyrinth
-    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart.
+    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart and not closer to the wall than 15cm.
 2. Follow the steps described in the [General Setup](#general-setup) chapter
 3. Have the remote computer with the compiled source code and packages ready
 
@@ -142,15 +139,15 @@ Phase 2 -> todo
 
 #### `token_detector` package
 
-The `token_detector` package integrates all the necessary components to perform object detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in a format compatible with other custom TurtleBot packages.
+The `token_detector` package integrates all the necessary components to map the world using slam and perform detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in json format. Also the map is saved in ros standard yaml and pgm format.
 
-The `token_detector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
+The `token_detector` package is organized into various behaviors, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
 ##### `image_viewer` node
 
 ###### Purpose
 
-The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` topics, converting them to the OpenCV format and subsequently displaying them in a window.
+The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` (for simulating in Gazebo) topics, converting them to the OpenCV format and subsequently displaying them in a window.
 
 ###### Usage
 
@@ -182,18 +179,20 @@ The specific priority of the behaviors has been chosen to ensure that reacting t
 <details>
 <summary><code>StepOntoToken</code> behavior description</summary>
 
-The `StepOntoToken` behavior relies on the PixyCam camera/sensor and allows the robot to move onto a token in the labyrinth. The script checks whether there is a registered token within a certain distance and if the PixyCam is detecting a token. If both conditions are met, the robot is moved towards the token at a slower speed.
+The `StepOntoToken` behavior relies on the PixyCam camera/sensor and allows the robot to move onto a token in the labyrinth. The bahavior is only applicable when the PixyCam is detecting a token AND when it's position in the map is not within a certain distance to all already recognized tokens to avoid detecting tokens twice when approaching from different angles.
+If both conditions are met, the robot is moved towards the token at a slower speed.
 
-To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros).
+To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros). As it seems to be normal behavior that every 3 block_data messages there is an empty message, a counter for consecutive non-detection is implemented to be sure, that the turtlebot is indeed not above a token any more.
 
 </details>
 
 <details>
 <summary><code>CaptureToken</code> behavior description</summary>
 
+This behavior is applicable once the StepOntoToken behavior is not executed any more. It only executed once to capture a token
 Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [*`current_pos` package*](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
 
-The behavior then checks if there is already a registered token within a distance of `0.15` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
+The behavior then checks if there is already a registered token within a distance of `15 cm` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
 
 </details>
 
