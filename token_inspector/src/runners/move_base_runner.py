@@ -60,11 +60,11 @@ class MoveBaseRunner:
             self._failure_time = time.time()
 
     def _goal_reached(self):
-        if self._goal.id not in self._reached_goals:
+        if self._goal and self._goal.id not in self._reached_goals:
             self._reached_goals.append(self._goal.id)
-            self._active = False
-            self._move_base_client.stop_tracking_goal()
             rospy.loginfo(f'movebaserunner: Token {self._goal.id} reached!')
+            self._active = False
+            self.stop()
             self._invoke_inspector_goal_reached()
 
     def stop(self):
@@ -72,3 +72,6 @@ class MoveBaseRunner:
         self._goal = None
         self._active = False
         rospy.logdebug(f'move_base_runner cancel all goals')
+
+    def is_active(self):
+        return self.is_active

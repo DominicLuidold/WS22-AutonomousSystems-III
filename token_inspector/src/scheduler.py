@@ -70,7 +70,7 @@ class Scheduler:
             self._currentTag = goal_token[0]
             resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
             rospy.loginfo(f'Scheduler: Approach goal {resp}')
-            return resp.path_length
+            return resp
         else:
             rospy.loginfo('All Tokens have been seen')
             return GimmeGoalResponse(-1, 0.0, 0.0)

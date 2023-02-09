@@ -64,6 +64,10 @@ class TokenInspector:
         if self._receive_goals:
             self._receive_goals = False
             rospy.logdebug('inspector: stop receiving goals')
+            self._movebaserunner.stop()
+            while self._movebaserunner.is_active:
+                rospy.loginfo('inspector: wait for movebase to get inactive')
+                rospy.Rate(10).sleep()
             self._next_goal:GimmeGoalResponse = self._request_goal(found_token=True)
             self.consecutive_goals_timer = rospy.Timer(rospy.Duration(secs=1), self._accept_goals_again)
 
