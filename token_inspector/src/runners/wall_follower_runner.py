@@ -24,7 +24,7 @@ class WallFollowerRunner:
 
 MAX_SPEED = 0.13
 MIN_DETECTION_DIST = 0.03
-MAX_DETECTION_DIST = 0.3
+MAX_DETECTION_DIST = 0.5
 MAX_TARGET_DISTANCE = 0.15
 
 class Direction(Enum):

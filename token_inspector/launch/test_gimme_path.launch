@@ -1,5 +1,0 @@
-<launch>
-    <!--<include file="$(find token_inspector)/launch/find_path.launch"></include>-->
-    <node pkg="token_inspector" type="pathfinder.py" name="pathfinder" output="screen"></node>
-    <node pkg="token_inspector" type="runner.py" name="runner" output="screen"></node>
-</launch>

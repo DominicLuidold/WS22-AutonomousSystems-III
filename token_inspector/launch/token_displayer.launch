@@ -1,4 +1,0 @@
-<launch>
-    <!--<include file="/opt/ros/noetic/share/turtlebot3_slam/launch/turtlebot3_slam.launch"></include>-->
-    <node pkg="token_inspector" type="display_tokens.py" name="tokendisplayer" output="screen"></node>
-</launch>
