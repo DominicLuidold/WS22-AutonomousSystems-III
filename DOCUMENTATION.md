@@ -66,13 +66,13 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 ##### PixyCam
 
 To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
-1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the pixycam is placed at the bottom facing the surface it comes to wrong color appearance if a light shines on it.
+1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom, facing the surface, it comes to wrong color appearance if a light shines on it.
 2. Place the PixyCam over a red token
 3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red
 4. Move the camera over a the token (results are best real conditions are reproduced - put the turtlebot on the ground, pixycam directly over a token)
     * ***Note:*** The better the lighting conditions the better
 6. Press the button once
-7. Make sure that tokens are detected: Hovering over a token makes the LED turn red (can be seen from above through little holes) and moving away the pixycam turns off the LED. Make sure that the light is steady and not flickering -> repeat process
+7. Make sure that tokens are detected: Hovering over a token makes the LED turn red (can be seen from above through little holes) and moving away the PixyCam turns off the LED. Make sure that the light is steady and not flickering, otherwise repeat the process.
 
  ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality. Use the PixyMon tool for the initial calibration!
 
@@ -84,15 +84,15 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     $  roscore
     ```
 2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
-3. Run (on turtlebot)
+3. Run (on the TurtleBot)
     ```console
     $ roslaunch turtlebot3_bringup turtlebot3_robot.launch
     ```
-4. Run (in a new terminal session on the turtlebot)
+4. Run (in a new terminal session on the TurtleBot)
     ```console
     $ roslaunch pixy_node pixy_usb.launch 
     ```
-5. Run (in a new terminal session on the robot)
+5. Run (in a new terminal session on the TurtleBot)
     ```console
     $ roslaunch raspicam_node camerav2_custom.launch
     ```
@@ -141,7 +141,7 @@ Phase 2 -> todo
 
 The `token_detector` package integrates all the necessary components to map the world using slam and perform detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in json format. Also the map is saved in ros standard yaml and pgm format.
 
-The `token_detector` package is organized into various behaviors, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
+The `token_detector` package is organized into two nodes and various behaviors, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
 ##### `image_viewer` node
 
@@ -352,7 +352,9 @@ Somewhat comparable to the behaviors implemented in the [*`token_detector` packa
 * `MoveBaseRunner` as the main runner based on `move_base`
 * `WallFollowerRunner` as "backup", should the `MoveBaserRunner` fail to reach the token for more than 10 consecutive tries
 
-For a detailed overview of the functionalityy of the two runners, please refer to the runner descriptions below.
+For a detailed overview of the functionality of the two runners, please refer to the runner descriptions below.
+
+*During development, a `CustomRunner` was attempted to get implemented with all custom logic. Compared to the `MoveBaseRunner` and `WallFollowerRunner`, the results were not satisfactory which is the reason why the usage was not included.*
 
 <details>
 <summary><code>MoveBaseRunner</code> runner description</summary>
@@ -388,32 +390,61 @@ Internally, the runner makes use of four different behaviors (order decending by
 
 As a first step, the runner uses the token's `x` and `y` coordinates and the TurtleBot's position (using the custom `PoseTF`'s `x`, `y` and `angle` properties (refer to [`current_pos` package](#current_pos-package) for more details)) to align itself in a straight line towards the token. The alignment is done by calculating a direction vector between the TurtleBot and the token and calculating the angle difference between the two points.
 
-Both the `TurnTowardsWall` and `FollowWall` behaviors are designed to keep the TurtleBot as close to the wall as possible, taking into account that any sharp edges or corners may drive the robot further away for which counter-steering is applied.  
+Both the `TurnTowardsWall` and `FollowWall` behaviors are designed to keep the TurtleBot as close to the wall as possible, taking into account that any sharp edges or corners may drive the robot further away for which counter-steering is applied, while navigating through the labyrinth and reaching the targeted tokens.    
 The `TowardsGoal` behavior is a very simple implementation that steers the TurtleBot towards the token.
 
 All the behaviors rely on the `/cmd_vel` topic to publish any movement commands calculated while navigating through the labyrinth.
 
 </details>
 
+###### Usage
+
+The `inspector` node can be launched with running the following command on the remote computer:
+
+```console
+$ roslaunch token_inspector token_inspector.launch
+```
+
+###### Arguments
+
+| Argument         | Default | Format | Required | Description         |
+|------------------|---------|--------|----------|---------------------|
+| `debug`          | `false` | `bool` | No       | Show debug messages |
+
 ##### `scheduler_server` node
-
-This code implements a ROS node that provides a service for scheduling goals for a robot to pursue. The service, named "give_goals_service", takes an id of a found tag and returns the next goal for the robot to pursue.
-
-The code first initializes a ROS node and initializes the service. Then it reads the positions of all the tokens from a JSON file specified by the parameter "tokens_file". The data structure _tokenpositions is populated with the information from the file. The service handler, handle_goal_scheduling, is responsible for scheduling the next goal for the robot.
-
-When the service is called with an id of a found tag, the tag is marked as found in the data structure _tokenpositions. The next step is to find the shortest path to the next token using the A* pathfinding algorithm. The service provide_path_length_service is used to get the path length. The tokens are then sorted based on the path lengths, and the token with the shortest path is selected as the next goal. The response of the service is the name of the selected token and its position in the map.
-
-In the case where all tokens have already been found, the service returns -1 as the name of the token and (0.0, 0.0) as its position. The node also logs the status of the tokens (i.e. whether they have been found or not) when the node is shut down.
-
-Note: Some of the code in the function get_path_length and the communication with the Global Scheduler are commented out and marked as "TODO".
 
 ###### Purpose
 
-TODO
+The `scheduler_server` node serves as the primary point of communication for the inspector node. It provides new token targets in the form of custom `GimmeGoal`, `GimmeGoalResponse`, and `GimmePathLength` messages and uses the token positions determined in Phase 1 (see [*Architecture*](#architecture)). The node then supplies these positions upon request and marks the tokens that have been found.
+
+Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time constraints.
 
 ###### Functional Principle
 
-TODO
+The `scheduler_server` node is initialized by reading the locations of tokens detected in Phase 1 and registering itself as a ROS service server.
+
+When a service call is received, mainly from the `inspector` node acting as a ROS service client, the `inspector` node reports whether the targeted token has been found. If the token has been located, it is marked as such. The next step involves finding the shortest path to the next uncollected token. The tokens are sorted based on the length of their respective paths, and the token with the shortest path is selected as the next goal. The response of the service includes the name and position of the selected token in the map.
+
+The communication between the service server and client is accomplished by using the customm implemented messages
+* `GimmeGoal` containing the `id_found`; `GimmeGoalResponse` containing the `id`, `x` and `y` coordinates
+* `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` as response
+* `GimmePathLength` containing the token's `id`, `x` and `y` coordinates with a `path_length` (represented by a `float`) as response
+
+###### Usage
+
+The `scheduler_server` node can be launched with running the following command on the remote computer:
+
+```console
+$ roslaunch token_inspector scheduler.launch
+```
+
+***Note:*** When using a different map than the pre-defined development map or new token locations, specify the `token_positions.json` path using the `token_file` argument.
+
+###### Arguments
+
+| Argument     | Default                                         | Format   | Required | Description                                                 |
+|--------------|-------------------------------------------------|----------|----------|-------------------------------------------------------------|
+| `token_file` | `maps/3token_corner_d0.02/token_positions.json` | `string` | No       | Location of map file (relative to `token_inspector` package |
 
 ##### `pathfinder` node
 
@@ -443,8 +474,8 @@ For customizing the camera configuration, two following two files are necessary 
 * `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
 * `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
 
+#### SLAM parameters
 
-#### Slam parameter
 todo
 
 ## Troubleshooting
