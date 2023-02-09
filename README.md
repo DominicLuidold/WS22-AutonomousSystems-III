@@ -124,11 +124,14 @@ To start using the TurtleBot, proceed with the following steps:
 
 #### Phase 1 - Map labyrinth and detect tokens
 
-On the remote computer, run (in a new terminal):
-
-```console
-$ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
-```
+1. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_detector custom_slam.launch
+    ```
+2. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens>
+    ```
 
 After the TurtleBot has completed the first round trip, the following message will be displayed in the terminal:
 ```
