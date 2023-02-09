@@ -450,33 +450,59 @@ $ roslaunch token_inspector scheduler.launch
 
 ###### Purpose
 
-TODO
+The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
 
 ###### Functional Principle
 
-TODO
+The `pathfinder` node acts as to ROS service servers
+* providing path planning as `provide_path_service`
+* providing path length calculation as `provide_path_length_service`
+
+For more details, refer to the individual sections below.
+
+<details>
+<summary>Path Planning</summary>
+
+To calculate the path, the node uses the `/move_base/make_plan` service provided by the [`move_base` package](https://wiki.ros.org/move_base). The path is calculated by getting the TurtleBot's current position using the custom `PoseTF` message (refer to [*`current_pos` package*](#current_pos-package) for more details) which is converted to a `Pose` message provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs). Finally, the path planning is handed over to the mentioned `make_plan` service, using both the TurtleBot's current location and the target token's coordinates as input.
+
+To enhance the pathfinding process, the TurtleBot only considers every tenth point in the generated path as its target destination. This optimization reduces the number of path calculations and speeds up the time it takes to reach the desired token.
+
+</details>
+
+<details>
+<summary>Path Length Calculation</summary>
+
+The path length calculation logically depends on the path planning logic described in the section above. It receives a `GimmePathLength` request and calculates the length of of a path by iterating through each `PoseStamped` in the path, calculating the euclidean distance between consecutive poses and summing up the distances.
+
+The `PoseStamped` used is provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs) containing a reference coordinate frame and a timestamp.[^pose-stamped]
+
+</details>
+
+###### Usage
+
+The `pathfinder` node can be launched with running the following command on the remote computer:
+
+```console
+$ roslaunch token_inspector find_path.launch
+```
 
 ### Adapted Modules
 
 #### Raspberry Pi camera configuration
 
 To enhance the performance of the Raspberry Pi camera when detecting tokens and to avoid overheating, delays, and other limitations, the following configuration modifications were made:
-* reduced the resolution from `1280x960` to `410x308` pixels.
-* set the `saturation` value to `70`.
-* changed the white balance mode (`awb_mode`) to `incandescent`.
+* reduced the resolution from `1280x960` (initially planned resolution) to `410x308` pixels
+* set the `saturation` value to `70`
+* changed the white balance mode (`awb_mode`) to `incandescent`
 
 ```xml
 <param name="saturation" value="70"/>
 <param name="awb_mode" value="incandescent"/>
 ```
 
-For customizing the camera configuration, two following two files are necessary which both have been originally copied over from the `camerav2_410x308` launch file pendants that were later adapted:
+For customizing the camera configuration, the following two files are necessary which both have been originally copied over from the `camerav2_410x308` launch file pendants:
 * `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
 * `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
-
-#### SLAM parameters
-
-todo
 
 ## Troubleshooting
 
@@ -540,3 +566,5 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
   See [`tf` package in ROS wiki](https://wiki.ros.org/tf)
 
 [^amcl]: ‘Adaptive Monte Carlo Localization’, Robotics Knowledgebase, Feb. 03, 2020. https://roboticsknowledgebase.com/wiki/state-estimation/adaptive-monte-carlo-localization/ (accessed Feb. 06, 2023).
+
+[^pose-stamped]: https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/PoseStamped.html
