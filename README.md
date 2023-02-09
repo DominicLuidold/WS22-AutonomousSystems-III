@@ -81,7 +81,7 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 ##### PixyCam
 
 To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
-1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom, facing the surface, it comes to wrong color appearance if a light shines on it.
+1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom facing downwards, it the camera may be able to see the reflections of the light in the ground and therefore recognize it wrongfully.
 2. Place the PixyCam over a red token.
 3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red.
 4. Move the camera over a the token. (results are best when real conditions are reproduced - put the turtlebot on the ground wth the pixycam directly over a token)
@@ -118,9 +118,9 @@ Once all steps have been executed, the general setup is completed and the Turtle
 
 To start using the TurtleBot, proceed with the following steps:
 1. Create a labyrinth
-    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart and not closer to the wall than 15cm.
-2. Follow the steps described in the [*General Setup*](#general-setup) chapter
-3. Have the remote computer with the compiled source code and packages ready
+    * ***Note:*** For optimal results, use labyrinth pieces from room `U131 Lab. Auton. Systeme` of Vorarlberg UAS with a minimum labyrinth width of one piece. Tokens *must* be spaced at least 20cm apart and not closer to the wall than 15cm. So called "Islands" do not work and must not be set up.
+2. Follow the steps described in the [*General Setup*](#general-setup) chapter.
+3. Have the remote computer with the compiled source code and packages ready.
 
 #### Phase 1 - Map labyrinth and detect tokens
 
@@ -207,7 +207,7 @@ $ roslaunch token_detector image_viewer.launch
 
 ###### Purpose
 
-The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a locally saved JSON file that can be easily reused where needed (for a more detailed explanation, refer to *`CaptureToken` behavior description*).
+The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a locally saved JSON file for reusability (for a more detailed explanation, refer to *`CaptureToken` behavior description*).
 
 ###### Functional Principle
 
@@ -225,9 +225,9 @@ The specific priority of the behaviors has been chosen to ensure that reacting t
 <details>
 <summary><code>StepOntoToken</code> behavior description</summary>
 
-The `StepOntoToken` behavior is designed to enable the robot to move onto a token within the labyrinth by utilizing the PixyCam camera/sensor. This behavior can only be executed when the PixyCam is detecting a token and when the token's location in the map is not too close to any previously recognized tokens. The purpose of this is to prevent the detection of the same token multiple times, especially when the robot approaches the token from different angles. If both conditions are met, the robot is moved towards the token at a slower speed.
+The `StepOntoToken` behavior is designed to enable the robot to move onto a token within the labyrinth by utilizing the PixyCam camera/sensor. This behavior can only be executed when the PixyCam is detecting a token and when the token's location in the map is not to close to any previously recognized tokens. The purpose of this is to prevent the detection of the same token multiple times, especially when the robot approaches the token from different angles. If both conditions are met, the robot is moved towards the token at a slower speed.
 
-To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros). It appears to be default behavior that for every three `block_data` messages received, an empty message is included.. To ensure that the TurtleBot is not mistakenly above a token, a counter for consecutive non-detections has been implemented.
+To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros). It appears to be default behavior that for every three `block_data` messages received, an empty message is included. To ensure that the TurtleBot is not mistakenly on top of a token, a counter for consecutive non-detections has been implemented.
 
 </details>
 
