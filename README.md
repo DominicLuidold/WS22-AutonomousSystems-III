@@ -146,7 +146,7 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 1. On the remote computer, run (in a new terminal):
     ```console
-    $ roslaunch token_inspector custom_navigation.launch
+    $ roslaunch token_inspector custom_navigation.launch map_file:=<path-to-map-file>
     ```
 2. On the remote computer, run (in a new terminal):
     ```console
@@ -158,7 +158,7 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
     ```
 4. On the remote computer, run (in a new terminal):
     ```console
-    $ roslaunch token_inspector scheduler.launch
+    $ roslaunch token_inspector scheduler.launch token_file:=<path-to-token-file>
     ```
 5. On the remote computer, run (in a new terminal):
     ```console
@@ -379,15 +379,15 @@ For the `WallLocalizer` class to function, the following command must be run on 
 $ roslaunch amcl_localization custom_navigation.launch
 ```
 
-***Note:*** When using a different map than the pre-defined development map, specify the path using the `map_file` argument.
+***Note:*** When using a different map, specify the path using the `map_file` argument.
 
 **Arguments**
 
-| Argument            | Default                                   | Format   | Required | Description                                                 |
-|---------------------|-------------------------------------------|----------|----------|-------------------------------------------------------------|
-| `map_file`          | `maps/3token_corner_d0.02/saved-map.yaml` | `string` | No       | Location of map file (relative to `token_inspector` package |
-| `open_rviz`         | `true`                                    | `bool`   | No       | Open Rviz, if `true`                                        |
-| `move_forward_only` | `false`                                   | `bool`   | No       | Only move forward, if `true`                                |
+| Argument            | Default                       | Format   | Required | Description                  |
+|---------------------|-------------------------------|----------|----------|------------------------------|
+| `map_file`          | `/killerrobot/saved-map.yaml` | `string` | No       | Location of map file         |
+| `open_rviz`         | `true`                        | `bool`   | No       | Open Rviz, if `true`         |
+| `move_forward_only` | `false`                       | `bool`   | No       | Only move forward, if `true` |
 
 </details>
 
@@ -482,13 +482,13 @@ The `scheduler_server` node can be launched with running the following command o
 $ roslaunch token_inspector scheduler.launch
 ```
 
-***Note:*** When using a different map than the pre-defined development map or new token locations, specify the `token_positions.json` path using the `token_file` argument.
+***Note:*** When using a different map or new token locations, specify the `token_positions.json` path using the `token_file` argument.
 
 ###### Arguments
 
-| Argument     | Default                                         | Format   | Required | Description                                                 |
-|--------------|-------------------------------------------------|----------|----------|-------------------------------------------------------------|
-| `token_file` | `maps/3token_corner_d0.02/token_positions.json` | `string` | No       | Location of map file (relative to `token_inspector` package |
+| Argument     | Default                             | Format   | Required | Description          |
+|--------------|-------------------------------------|----------|----------|----------------------|
+| `token_file` | `/killerrobot/token_positions.json` | `string` | No       | Location of map file |
 
 ##### `pathfinder` node
 
