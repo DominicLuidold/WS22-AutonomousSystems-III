@@ -2,6 +2,21 @@
 
 <img src="documentation/TurtleBot3_SteFloDom.jpg" alt="Image of the `SteFloDom` TurtleBot 3" style="height: 500px" />
 
+## Table of Contents
+
+1. [Getting Started](#getting-started)
+    1. [Preparing the TurtleBot hardware](#preparing-the-turtlebot-hardware)
+    1. [Preparing the TurtleBot software](#preparing-the-turtlebot-software)
+    1. [Using the TurtleBot](#using-the-turtlebot)
+1. [Architecture](#architecture)
+    1. [Custom Modules](#custom-modules)
+        1. [`token_detector` package](#token_detector-package)
+        1. [`current_pos` package](#current_pos-package)
+        1. [`token_inspector` package](#token_inspector-package)
+    1. [Adapted Modules](#adapted-modules)
+        1. [Rasperry Pi camera configuration](#raspberry-pi-camera-configuration)
+1. [Troubleshooting](#troubleshooting)
+
 ## Getting Started
 
 This section will describe how to start, operate and use the TurtleBot project with step-by-step instructions.
