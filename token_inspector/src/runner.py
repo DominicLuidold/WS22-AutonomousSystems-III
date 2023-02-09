@@ -104,7 +104,7 @@ class Runner:
             if abs(angular_velocity) > MAX_ANGULAR_VELOCITY:
                 angular_velocity = MAX_ANGULAR_VELOCITY
 
-            rospy.logerr('Runner angular velocity: %s'%angular_velocity)
+            rospy.logdebug('Runner angular velocity: %s'%angular_velocity)
             cmd_vel = Twist()
             cmd_vel.angular.z = angular_velocity
             self._movementPublisher.publish(cmd_vel)
