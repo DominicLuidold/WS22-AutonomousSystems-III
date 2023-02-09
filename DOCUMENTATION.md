@@ -78,7 +78,10 @@ To be able to detect any tokens using the PixyCam, the camera has to be trained 
 ##### Software
 
 To be able to run the software built into the TurtleBot, proceed with the following steps:
-1. Run `roscore` on the remote computer
+1. On the remote computer, run
+    ```console
+    $  roscore
+    ```
 2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
 3. Run
     ```console
@@ -92,8 +95,12 @@ To be able to run the software built into the TurtleBot, proceed with the follow
     ```console
     $ roslaunch raspicam_node camerav2_custom.launch
     ```
+6. Run (in a new terminal session)
+    ```console
+    $ roslaunch current_pos launch_transformer.launch
+    ```
 
-Once all five steps have been executed, the general setup is completed and the TurtleBot is ready.
+Once all steps have been executed, the general setup is completed and the TurtleBot is ready.
 
 ### Using the TurtleBot
 
@@ -121,8 +128,6 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 ***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
 
 #### TODO -- TOKEN INSPECTOR -- TODO
-
-#### TODO -- INTERACTING WITH OTHER TEAM -- TODO
 
 ## Architecture
 
@@ -289,24 +294,43 @@ $ roslaunch current_pos launch_transformer.launch
 |--------------|---------|----------|----------|----------------------------------------------------------------------|
 | `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
 
-### `amcl_localization` package
+#### `token_inspector` package
 
-##### Purpose
+The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive to the tokens in the order they were found, regardless of where the TurtleBot is placed.
+
+The `token_inspector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth:
+
+##### `inspector` node
+
+###### Purpose
+
+The `inspector` node has two main functionalities:
+* localizing the TurtleBot within the labyrinth using advanced Monte Carlo localization
+* requesting new targets from the [`scheduler_server` node](#scheduler_server-node), triggering runners
+
+###### Functional Principle
+
+As a first step, the `inspector` node creates an instance of the `WallLocalizer` class wich uses `Advanced Monte Carlo Localization` to localize the TurtleBot within the labyrinth before being able to start requesting new target tokens to plan the path for and to drive to. For more details, refer to the *Localization using `AMCL`* block below.
+
+<details>
+<summary>Localization using <code>AMCL</code></summary>
+
+**Purpose**
 
 "AMCL" stands for "Adaptive Monte Carlo Localisation". It is an algorithm used by the TurtleBot to autonomously determine its position within the labyrinth. This is particularly useful when the TurtleBot is placed at a random location within the labyrinth (a scenario known as the "kidnapped robot problem"), or after completing Phase 1 and starting Phase 2 (see [*Architecture*](#architecture)).
 
-##### Functional Principle
+**Functional Principle**
 
-The `amcl_localization` package heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
+The `WallLocalizer` class heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
 To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`.
 
 In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, or for example the footprint of the TurtleBot itself.
 
 AMCL uses a combination of an existing map and sensor data (in this case data from the LiDAR sensor) to generate repeated estimates, or "particles", of a robot's position. The algorithm processes a continuous stream of sensor data to determine which particles match the observed surroundings and which can be ignored. New particles are generated that are closer to the actual position which eventually lead to a more or less certain position of the robot within the existing map. [^amcl]
 
-##### Usage
+**Usage**
 
-The `amcl_localizer` node can be launched with running the following command on the remote computer:
+For the `WallLocalizer` class to function, the following command must be run on the remote computer:
 
 ```console
 $ roslaunch amcl_localization custom_navigation.launch
@@ -314,7 +338,7 @@ $ roslaunch amcl_localization custom_navigation.launch
 
 ***Note:*** When using a different map than the pre-defined development map, specify the path using the `map_file` argument.
 
-##### Arguments
+**Arguments**
 
 | Argument            | Default                                   | Format   | Required | Description                                                 |
 |---------------------|-------------------------------------------|----------|----------|-------------------------------------------------------------|
@@ -322,8 +346,70 @@ $ roslaunch amcl_localization custom_navigation.launch
 | `open_rviz`         | `true`                                    | `bool`   | No       | Open Rviz, if `true`                                        |
 | `move_forward_only` | `false`                                   | `bool`   | No       | Only move forward, if `true`                                |
 
+</details>
 
-#### `token_inspector` package
+After the TurtleBot has successfully localized itself within the labyrinth, the `inspector` node continuously communicates with the `scheduler_server` node to receive the next target token. The target token is then passed on to a set of specialized runners responsible for navigating to the token within the labyrinth.  
+Somewhat comparable to the behaviors implemented in the [*`token_detector` package*](#token_detector-package), the `inspector` node uses different runner implementations to reach the next token:
+* `MoveBaseRunner` as the main runner based on `move_base`
+* `WallFollowerRunner` as "backup", should the `MoveBaserRunner` fail to reach the token for more than 10 consecutive tries
+
+For a detailed overview of the functionalityy of the two runners, please refer to the runner descriptions below.
+
+<details>
+<summary><code>MoveBaseRunner</code> runner description</summary>
+
+The `MoveBaserRunner` relies on three different packages:
+* [`action_lib` package](https://wiki.ros.org/actionlib)
+* [`move_base` package](https://wiki.ros.org/move_base)
+* [`move_base_msgs` package](https://wiki.ros.org/move_base_msgs)
+
+as well as the internal `pathfinder` node (see [*`pathfinder`*](#pathfinder-node)).
+
+The runner makes usage of the standardized communcation model (implemented by `action_lib`) of providing a `MoveBaseGoal` to the `move_base` client, reacting to `MoveBaseFeedback` and `MoveBaseResult` messages.  
+In particular, the runner creates a new `MoveBaseGoal` using the token's `x` and `y` coordinates and waits for the continuous `MoveBaseFeedback` to determine whether the TurtleBot is near the token's position using the euclidian distance as measurment.
+
+The `MoveBaserRunner` differentiates between two different states that the `MoveBaseResult` returns, indicating that `move_base` has stopped tracking the goal:
+* `GoalStatus.SUCCEEDED` implying that the TurtleBot has reached the targeted token
+* Any other `GoalStatus` status which counts toward an internal failure count
+
+Should the internal failure count fail for more than 10 (consecutive) times, the runner disables itself preemtively to avoid any further runs not resulting in finding the specified token. As a result, the `WallFollowerRunner` will get called by the `inspector` node to guarantee that the targeted token will get reached.
+
+</details>
+
+<details>
+<summary><code>WallFollowerRunner</code> runner description</summary>
+
+TODO
+
+</details>
+
+##### `scheduler_server` node
+
+This code implements a ROS node that provides a service for scheduling goals for a robot to pursue. The service, named "give_goals_service", takes an id of a found tag and returns the next goal for the robot to pursue.
+
+The code first initializes a ROS node and initializes the service. Then it reads the positions of all the tokens from a JSON file specified by the parameter "tokens_file". The data structure _tokenpositions is populated with the information from the file. The service handler, handle_goal_scheduling, is responsible for scheduling the next goal for the robot.
+
+When the service is called with an id of a found tag, the tag is marked as found in the data structure _tokenpositions. The next step is to find the shortest path to the next token using the A* pathfinding algorithm. The service provide_path_length_service is used to get the path length. The tokens are then sorted based on the path lengths, and the token with the shortest path is selected as the next goal. The response of the service is the name of the selected token and its position in the map.
+
+In the case where all tokens have already been found, the service returns -1 as the name of the token and (0.0, 0.0) as its position. The node also logs the status of the tokens (i.e. whether they have been found or not) when the node is shut down.
+
+Note: Some of the code in the function get_path_length and the communication with the Global Scheduler are commented out and marked as "TODO".
+
+###### Purpose
+
+TODO
+
+###### Functional Principle
+
+TODO
+
+##### `pathfinder` node
+
+###### Purpose
+
+TODO
+
+###### Functional Principle
 
 TODO
 

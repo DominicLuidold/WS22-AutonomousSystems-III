@@ -282,23 +282,6 @@ TURTLEBOT3_MODEL=waffle roslaunch token_detector labyrinth_small.launch
 </table>
 
 # Probleme
-### Lidar liefert keine Werte
-Lidar liefert manchmal keine Werte und schaltet sich gelegentlich selbst ab (dreht sich nicht mehr)   
---> Austausch des gesamten LIDAR mit Ersatzgerät 
-
-### Bringup scheitert an “creation of publisher failed checksum does not match sensor_msgs/JointState”
-In weiterer Folge funktioniert die Navigation des Roboters nicht. Er findet keinen Pfad zum Ziel   
---> erneuter Firmware-Upload des OpenCR Boards. Hier scheint beim ersten Mal etwas schiefgelaufen zu sein. (siehe Quick-Start Tutorial)
-
-### Timestamps sind Out of Sync
-Siehe Fehlermeldungen: 
-
-    For frame [base_scan]: No transform to fixed frame [map].  
-    TF error: [Lookup would require extrapolation -0,522100208s into the future.  Requested time 1666254110,220566034 but the latest data is at time 1666254109,698465824, when looking up transform from frame [base_scan] to frame [map]]  
-    und Costmap2DROS transform timeout. Current time: 1666254261.9980, global_pose stamp: 1666254261.2392, tolerance: 0.5000 
-
---> Versuchen, den Raspi mit einem Zeitserver zu synchronisieren. Hat geholfen aber nicht gelöst. Schlussendlich ist Problem mit fixen vom Bringup-Problem behoben. 
-
 ### catkin_make scheitert nach Installation der Raspicam packages
 --> Dependencies fehlen. Die dependencies wurden manuell installiert.   
 install: libraspberrypi-dev, libraspberrypi-bin, libraspberrypi0
