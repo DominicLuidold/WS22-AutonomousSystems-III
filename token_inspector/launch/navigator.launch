@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="token_inspector" type="loader_and_navigator.py" name="navigator" output="screen"></node>
-</launch>

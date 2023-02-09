@@ -24,7 +24,7 @@ class MoveBaseRunner:
         self._reached_goals = []
 
     def is_applicable(self, goal:GimmeGoalResponse):
-        return self._active or time.time() - self._failure_time > 10
+        return self._active or time.time() - self._failure_time > 12
 
     def run(self, target:GimmeGoalResponse):
         if not self._active and target.id not in self._reached_goals:
@@ -55,7 +55,7 @@ class MoveBaseRunner:
         rospy.logdebug(f'move base done with status {state}')
         if state == GoalStatus.SUCCEEDED:
             self._goal_reached()
-        else: # state == GoalStatus.ABORTED:
+        elif state == GoalStatus.ABORTED:
             rospy.logerr('movebaserunner: Aborted!')
             self.stop()
             self._failure_time = time.time()
@@ -64,7 +64,6 @@ class MoveBaseRunner:
         if self._goal and self._goal.id not in self._reached_goals:
             self._reached_goals.append(self._goal.id)
             rospy.loginfo(f'movebaserunner: Token {self._goal.id} reached!')
-            self._active = False
             self.stop()
             self._invoke_inspector_goal_reached()
 
@@ -72,7 +71,7 @@ class MoveBaseRunner:
         self._move_base_client.cancel_all_goals()
         self._goal = None
         self._active = False
-        rospy.loginfo(f'move_base_runner cancel all goals')
+        rospy.logdebug(f'move_base_runner cancel all goals')
 
     def is_active(self):
         return self.is_active
