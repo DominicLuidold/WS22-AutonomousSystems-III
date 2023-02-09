@@ -520,9 +520,11 @@ The `pathfinder` node acts as to ROS service servers
 For more details, refer to the individual sections below.
 
 <details>
-<summary>Path Planning</summary>
+<summary>Deprecated: Path Planning</summary>
 
-To calculate the path, the node uses the `/move_base/make_plan` service provided by the [`move_base` package](https://wiki.ros.org/move_base). The path is calculated by getting the TurtleBot's current position using the custom `PoseTF` message (refer to [*`current_pos` package*](#current_pos-package) for more details) which is converted to a `Pose` message provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs). Finally, the path planning is handed over to the mentioned `make_plan` service, using both the TurtleBot's current location and the target token's coordinates as input.
+Originally, it was planned to get the path in this way, but instead, the `SimpleActionClient` by `move_base` was used.
+
+ To calculate the path, the node uses the `/move_base/make_plan` service provided by the [`move_base` package](https://wiki.ros.org/move_base). The path is calculated by getting the TurtleBot's current position using the custom `PoseTF` message (refer to [*`current_pos` package*](#current_pos-package) for more details) which is converted to a `Pose` message provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs). Finally, the path planning is handed over to the mentioned `make_plan` service, using both the TurtleBot's current location and the target token's coordinates as input.
 
 To enhance the pathfinding process, the TurtleBot only considers every tenth point in the generated path as its target destination. This optimization reduces the number of path calculations and speeds up the time it takes to reach the desired token.
 
@@ -530,7 +532,9 @@ To enhance the pathfinding process, the TurtleBot only considers every tenth poi
 
 <details>
 <summary>Path Length Calculation</summary>
+The path length calculation was done via the euler distance from the start to the endpoint. It receives a `GimmePathLength` request and answers with a simple distance.
 
+The below part was planned, but could not be used.
 The path length calculation logically depends on the path planning logic described in the section above. It receives a `GimmePathLength` request and calculates the length of of a path by iterating through each `PoseStamped` in the path, calculating the euclidean distance between consecutive poses and summing up the distances.
 
 The `PoseStamped` used is provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs) containing a reference coordinate frame and a timestamp.[^pose-stamped]
