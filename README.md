@@ -142,7 +142,34 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 ***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. Once the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
 
-#### Phase 2 - TODO
+#### Phase 2 - Localize robot, plan paths & drive to tokens
+
+1. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_inspector custom_navigation.launch
+    ```
+2. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch current_pos launch_transformer.launch
+    ```
+3. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_inspector find_path.launch
+    ```
+4. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_inspector scheduler.launch
+    ```
+5. On the remote computer, run (in a new terminal):
+    ```console
+    $ roslaunch token_inspector token_inspector.launch
+    ```
+
+The TurtleBot will then start to locate itself within the labyrinth, regardless of its starting position, and then continue to plan the path and drive to each token in turn.  
+When the TurtleBot has finished, the following message will appear in the terminal:
+```
+Finished
+```
 
 ## Architecture
 
