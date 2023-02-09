@@ -14,7 +14,7 @@
         1. [`current_pos` package](#current_pos-package)
         1. [`token_inspector` package](#token_inspector-package)
     1. [Adapted Modules](#adapted-modules)
-        1. [Rasperry Pi camera configuration](#raspberry-pi-camera-configuration)
+        1. [Raspberry Pi camera configuration](#raspberry-pi-camera-configuration)
 1. [Troubleshooting](#troubleshooting)
 
 ## Getting Started
