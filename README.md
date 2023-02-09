@@ -81,7 +81,7 @@ Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (
 ##### PixyCam
 
 To be able to detect any tokens using the PixyCam, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
-1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom, facing the surface, it comes to wrong color appearance if a light shines on it.
+1. Make sure the color indication LED is covered with a piece of tape or similar to avoid reflections. As the PixyCam is placed at the bottom, facing the ground, it may come to wrong color appearances if a light shines on it or is reflected
 2. Place the PixyCam over a red token
 3. Press and hold the button until the LED turns white (it will switch to all colors after 1 second), then release when it turns red
 4. Move the camera over a the token (results are best real conditions are reproduced - put the turtlebot on the ground, pixycam directly over a token)
@@ -96,7 +96,7 @@ To be able to detect any tokens using the PixyCam, the camera has to be trained 
 To be able to run the software built into the TurtleBot, proceed with the following steps:
 1. On the remote computer, run
     ```console
-    $  roscore
+    $ roscore
     ```
 2. Connect to the TurtleBot via SSH (`$ ssh ubuntu@<turtlebot-ip-address>`) with default-password `turtlebot`
 3. Run (on the TurtleBot)
@@ -158,7 +158,7 @@ Once the TurtleBot has located itself, it uses a goal scheduling algorithm based
 
 #### `token_detector` package
 
-The `token_detector` package integrates all the necessary components to map the world using slam and perform detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in json format. Also the map is saved in ros standard yaml and pgm format.
+The `token_detector` package integrates all the necessary components to map the world using slam and perform detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in JSON format. Additionally, the map is saved in a ROS standard `.yaml` and `.pgm` format.
 
 The `token_detector` package is organized into two nodes and various behaviors, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
@@ -198,18 +198,16 @@ The specific priority of the behaviors has been chosen to ensure that reacting t
 <details>
 <summary><code>StepOntoToken</code> behavior description</summary>
 
-The `StepOntoToken` behavior relies on the PixyCam camera/sensor and allows the robot to move onto a token in the labyrinth. The bahavior is only applicable when the PixyCam is detecting a token AND when it's position in the map is not within a certain distance to all already recognized tokens to avoid detecting tokens twice when approaching from different angles.
-If both conditions are met, the robot is moved towards the token at a slower speed.
+The `StepOntoToken` behavior is designed to enable the robot to move onto a token within the labyrinth by utilizing the PixyCam camera/sensor. This behavior can only be executed when the PixyCam is detecting a token and when the token's location in the map is not too close to any previously recognized tokens. The purpose of this is to prevent the detection of the same token multiple times, especially when the robot approaches the token from different angles. If both conditions are met, the robot is moved towards the token at a slower speed.
 
-To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros). As it seems to be normal behavior that every 3 block_data messages there is an empty message, a counter for consecutive non-detection is implemented to be sure, that the turtlebot is indeed not above a token any more.
+To be able to detect when the PixyCam is recognizing a token, the custom `PixycamDetector` class is used which relies on the `/my_pixy/block_data` topic provided by the [pixy_ros package](https://github.com/jeskesen/pixy_ros). It appears to be default behavior that for every three `block_data` messages received, an empty message is included.. To ensure that the TurtleBot is not mistakenly above a token, a counter for consecutive non-detections has been implemented.
 
 </details>
 
 <details>
 <summary><code>CaptureToken</code> behavior description</summary>
 
-This behavior is applicable once the StepOntoToken behavior is not executed any more. It only executed once to capture a token
-Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [*`current_pos` package*](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
+This behavior is applicable once the `StepOntoToken` behavior is not executed any more and only executed once per captured token. Once the `StepOntoToken` behavior has confirmed that the TurtleBot is located on a token, the behavior waits for the custom `PoseTF` (see [*`current_pos` package*](#current_pos-package)) message published on the `/pose_tf` topic which represents the position of the token transformed into the map frame.
 
 The behavior then checks if there is already a registered token within a distance of `15 cm` from the current TurtleBot position. If not, the captured token is registered, assigned a `tagno` and the information (in form of `tagno`, `x`, `y` and `angle`) is saved in a JSON file located at `/killerrobot/token_positions.json`.
 
