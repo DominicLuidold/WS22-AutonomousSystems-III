@@ -405,7 +405,7 @@ $ roslaunch amcl_localization custom_navigation.launch
 
 </details>
 
-After the TurtleBot has successfully localized itself within the labyrinth, the `inspector` node communicates with the `scheduler_server` node (using custom `GimmeGoal` and `GimmeGoalResponse` messages (refer to [*`scheduler_server` node*](#scheduler_server-node))) to receive the next target token. The target token is then passed on to a set of specialized runners responsible for navigating to the token within the labyrinth.  
+After the TurtleBot has successfully localized itself within the labyrinth, the `inspector` node communicates with the `scheduler_server` node (using custom `GimmeGoal` service messages (refer to [*`scheduler_server` node*](#scheduler_server-node))) to receive the next target token. The target token is then passed on to a set of specialized runners responsible for navigating to the token within the labyrinth.  
 Somewhat comparable to the behaviors implemented in the [*`token_detector` package*](#token_detector-package), the `inspector` node uses different runner implementations to reach the next token:
 * `MoveBaseRunner` as the main runner based on `move_base`
 * `WallFollowerRunner` as "backup", should the `MoveBaserRunner` fail to reach the token for more than 10 consecutive tries
@@ -473,15 +473,16 @@ $ roslaunch token_inspector token_inspector.launch
 
 ###### Purpose
 
-The `scheduler_server` node serves as the primary point of communication for the inspector node. It provides new token targets in the form of custom `GimmeGoal`, `GimmeGoalResponse`, and `GimmePathLength` messages and uses the token positions determined in Phase 1 (see [*Architecture*](#architecture)). The node then supplies these positions upon request and marks the tokens that have been found.
+The `scheduler_server` node serves as the primary point of communication for the inspector node. It provides new token targets in the form of custom `GimmeGoal` services and uses the token positions determined in Phase 1 (see [*Architecture*](#architecture)). The node then supplies these positions upon request and marks the tokens that have been found.
 
-Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time constraints.
+Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time and Wi-Fi bandwidth constraints.
 
 ###### Functional Principle
 
 The `scheduler_server` node is initialized by reading the locations of tokens detected in Phase 1 and registering itself as a ROS service server.
+* providing the next goal via `give_goals_service`
 
-When a service call is received, mainly from the `inspector` node acting as a ROS service client, the `inspector` node reports whether the targeted token has been found. If the token has been located, it is marked as such. The next step involves finding the shortest path to the next uncollected token. The tokens are sorted based on the length of their respective paths, and the token with the shortest path is selected as the next goal. The response of the service includes the name and position of the selected token in the map.
+When a service call is received, mainly from the `inspector` node acting as a ROS service client, the `inspector` node reports whether the targeted token has been found. If the token has been located, it is marked as such. The next step involves finding the shortest path to the next uncollected token. This is done via the `GimmePathLength` service connected to the `pathfinder` node. The tokens are sorted based on the distance to the turtlebot, and the token with the shortest distance is selected as the next goal. The response of the service includes the name and position of the selected token in the map.
 
 The communication between the service server and client is accomplished by using the customm implemented messages
 * `GimmeGoal` containing the `id_found`; `GimmeGoalResponse` containing the `id`, `x` and `y` coordinates
@@ -508,7 +509,7 @@ $ roslaunch token_inspector scheduler.launch
 
 ###### Purpose
 
-The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
+The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
 
 ###### Functional Principle
 
