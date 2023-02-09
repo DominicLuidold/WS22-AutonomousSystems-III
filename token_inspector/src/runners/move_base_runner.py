@@ -2,7 +2,7 @@ import rospy
 from collections.abc import Callable
 from token_inspector.srv import GimmeGoal, GimmeGoalResponse
 import actionlib
-from actionlib_msgs.msg import GoalStatus
+from actionlib_msgs.msg import GoalStatus, GoalStatusArray
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseFeedback, MoveBaseResult
 import time
 from helpers.helper import eucl_distance
@@ -20,13 +20,14 @@ class MoveBaseRunner:
         self._failure_time = 0 # very looong ago
         self._state: GoalStatus = 0
         self._goal: GimmeGoalResponse = None
+        self._movebase_goal = None
         self._reached_goals = []
 
     def is_applicable(self, goal:GimmeGoalResponse):
         return self._active or time.time() - self._failure_time > 10
 
     def run(self, target:GimmeGoalResponse):
-        if not self._active:
+        if not self._active and target.id not in self._reached_goals:
             rospy.loginfo(f'movebaserunner: new goal {target.id}')
             self._goal = target
             goal:MoveBaseGoal = MoveBaseGoal()
@@ -60,15 +61,18 @@ class MoveBaseRunner:
             self._failure_time = time.time()
 
     def _goal_reached(self):
-        if self._goal.id not in self._reached_goals:
+        if self._goal and self._goal.id not in self._reached_goals:
             self._reached_goals.append(self._goal.id)
-            self._active = False
-            self._move_base_client.stop_tracking_goal()
             rospy.loginfo(f'movebaserunner: Token {self._goal.id} reached!')
+            self._active = False
+            self.stop()
             self._invoke_inspector_goal_reached()
 
     def stop(self):
         self._move_base_client.cancel_all_goals()
         self._goal = None
         self._active = False
-        rospy.logdebug(f'move_base_runner cancel all goals')
+        rospy.loginfo(f'move_base_runner cancel all goals')
+
+    def is_active(self):
+        return self.is_active

@@ -21,7 +21,7 @@ class TokenInspector:
         rospy.loginfo('token_inspector: wait for give goals service')
         rospy.wait_for_service('give_goals_service')
         self._gimmeGoals = rospy.ServiceProxy('give_goals_service', GimmeGoal)
-        rospy.logerr('token_inspector: give goals service up')
+        rospy.loginfo('token_inspector: give goals service up')
         self._movebaserunner = MoveBaseRunner(self.goal_reached)
         self._runners = [RaspicamRunner(), self._movebaserunner, CustomRunner(), WallFollowerRunner()]
         rospy.loginfo('Init Inspector Done')
@@ -31,7 +31,7 @@ class TokenInspector:
 
     def keep_movin(self):
         while not rospy.is_shutdown():
-            #self._localizer.localize() # do this until localization is complete
+            self._localizer.localize() # do this until localization is complete
             self._next_goal:GimmeGoalResponse = self._request_goal()
             while self._next_goal:
                 for r in self._runners:
@@ -52,10 +52,10 @@ class TokenInspector:
         try:
             goal:GimmeGoalResponse = self._gimmeGoals(-1 if found_token else -4711)
             if goal.id == -1: return None # -1 is code for: no more goals left
-            rospy.logerr(f'inspector: received goal {goal.id}')
+            rospy.loginfo(f'inspector: received goal {goal.id}')
             return goal
         except rospy.ServiceException as e:
-            rospy.logerr('Service call failed: %s'%e)
+            rospy.logerr('inspector: Request Goals Service call failed: %s'%e)
         return None
 
 
@@ -64,6 +64,7 @@ class TokenInspector:
         if self._receive_goals:
             self._receive_goals = False
             rospy.logdebug('inspector: stop receiving goals')
+            self._movebaserunner.stop()
             self._next_goal:GimmeGoalResponse = self._request_goal(found_token=True)
             self.consecutive_goals_timer = rospy.Timer(rospy.Duration(secs=1), self._accept_goals_again)
 

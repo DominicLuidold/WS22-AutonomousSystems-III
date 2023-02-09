@@ -2,7 +2,7 @@ import rospy
 import json
 from os import path
 from operator import itemgetter
-from token_inspector.srv import GimmeGoal, GimmePathLength, GimmeGoalResponse
+from token_inspector.srv import GimmeGoal, GimmePathLength, GimmeGoalResponse, GimmePathLengthResponse
 
 
 FOUND_TAG = -1
@@ -70,7 +70,7 @@ class Scheduler:
             self._currentTag = goal_token[0]
             resp = GimmeGoalResponse(goal_token[0], self._tokenpositions[goal_token[0]]['x'], self._tokenpositions[goal_token[0]]['y'])
             rospy.loginfo(f'Scheduler: Approach goal {resp}')
-            return resp.path_length
+            return resp
         else:
             rospy.loginfo('All Tokens have been seen')
             return GimmeGoalResponse(-1, 0.0, 0.0)
@@ -78,9 +78,9 @@ class Scheduler:
     def get_path_length(self, token):
         rospy.loginfo('Get pathlength of token %s'%token['name'])
         try:
-            resp = self._gimmePathLength(token['name'], token['x'], token['y'])
+            resp:GimmePathLengthResponse = self._gimmePathLength(token['name'], token['x'], token['y'])
             rospy.loginfo('Path length to token %s is: %s'%(token['name'],resp.path_length))
-            return token['name'], 1
+            return token['name'], resp.path_length
         except rospy.ServiceException as e:
             rospy.logerr('Service call failed: %s'%e)
 

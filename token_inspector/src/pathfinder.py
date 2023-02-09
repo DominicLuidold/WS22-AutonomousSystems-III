@@ -16,7 +16,8 @@ class Pathfinder:
         rospy.init_node('pathfinder', log_level=rospy.DEBUG, anonymous=True)
         rospy.loginfo('Pathfinder initialized!')
 
-        self._providePathLenghtService = rospy.Service('provide_path_length_service', GimmePathLength, self.handle_path_length)
+        self._providePathLenghtService = rospy.Service('provide_path_length_service', GimmePathLength, self.handle_path_length_euklid)
+        #self._providePathLenghtService = rospy.Service('provide_path_length_service', GimmePathLength, self.handle_path_length)
         self._providePathService = rospy.Service('provide_path_service', GimmePath, self.handle_path)
         rospy.wait_for_service('/move_base/make_plan')
         self._makePlan = rospy.ServiceProxy('/move_base/make_plan', GetPlan)
@@ -67,6 +68,21 @@ class Pathfinder:
         distance = self.calculate_path_length(resp)
         rospy.loginfo('Pathfinder: Distance to target %i is: %f'%(req.id_token,distance))
         return distance
+
+    def handle_path_length_euklid(self, req):
+        rospy.logwarn('Received request for pathlength of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.logwarn(req)
+        target = Pose()
+        target.position.x = req.x
+        target.position.y = req.y
+        target.orientation.w = 1.0
+
+        #resp = self.get_path_to_target(target)
+        #rospy.loginfo(resp)
+
+        distance = self.calculate_path_length_euklid(target)
+        rospy.loginfo('Pathfinder: Distance to target %i is: %f'%(req.id_token,distance))
+        return distance
         
 
     def calculate_path_length(self, path: Path):
@@ -88,6 +104,17 @@ class Pathfinder:
 
         return length
 
+    def calculate_path_length_euklid(self, target: Pose):
+        length = 0.0        
+        startTF:PoseTF = self.get_current_position()
+        start = Pose()
+        start.position.x = startTF.mapPose.x
+        start.position.y = startTF.mapPose.y
+
+        length = self.euklidean_distance(start, target)
+
+        return length
+
     def euklidean_distance(self, start: Pose, target: Pose):
         x1 = target.position.x
         y1 = target.position.y
@@ -96,7 +123,7 @@ class Pathfinder:
         return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 
     def handle_path(self,req):
-        rospy.logerr('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
+        rospy.loginfo('Received request for path of %s: %s|%s'%(str(req.id_token),str(req.x),str(req.y)))
         target = Pose()
         target.position.x = req.x
         target.position.y = req.y
