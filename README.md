@@ -368,7 +368,7 @@ As a first step, the `inspector` node creates an instance of the `WallLocalizer`
 The `WallLocalizer` class heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
 To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`. These two measurments have been introduced to improve the accuracy of the AMCL algorithm as shorter or too long execution times might result in wrong localization results.
 
-In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, such as the footprint of the TurtleBot itself.
+In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, such as the footprint of the TurtleBot itself. The defining of separate parameters for both the local and global costmaps was crucial in achieving proper localization and was a significant contributing factor.
 
 AMCL uses a combination of an existing map and sensor data (in this case data from the LiDAR sensor) to generate repeated estimates, or "particles", of a robot's position. The algorithm processes the continuous stream of sensor data it receives to determine which particles match the observed surroundings and which can be ignored. New particles are generated that are closer to the actual position while moving, which eventually lead to a more or less certain position of the robot within the existing map. [^amcl]
 
@@ -413,6 +413,8 @@ Somewhat comparable to the behaviors implemented in the [*`token_detector` packa
 For a detailed overview of the functionality of the two runners, please refer to the runner descriptions below.
 
 *During development, a `CustomRunner` was attempted to get implemented with all custom logic. Compared to the `MoveBaseRunner` and `WallFollowerRunner`, the results were not satisfactory which is the reason why the usage was not included.*
+
+Due to limited time, obstacle avoidance involving the avoidance of other TurtleBots navigating through the same labyrinth concurrently has not been implemented. Ideally, this could have been achieved through a similar approach to token detection. For instance, by attaching a distinctive colored token-like object to each TurtleBot and using the RaspberryPi camera to detect the color, the planned path could be adjusted to avoid other TurtleBots.
 
 <details>
 <summary><code>MoveBaseRunner</code> runner description</summary>
@@ -475,19 +477,22 @@ $ roslaunch token_inspector token_inspector.launch
 
 The `scheduler_server` node serves as the primary point of communication for the inspector node. It provides new token targets in the form of custom `GimmeGoal` services and uses the token positions determined in Phase 1 (see [*Architecture*](#architecture)). The node then supplies these positions upon request and marks the tokens that have been found.
 
-Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time and Wi-Fi bandwidth constraints.
+Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time and WiFi bandwidth constraints. However, a general plan on how the communcation might have worked was planned and is described further below.
 
 ###### Functional Principle
 
-The `scheduler_server` node is initialized by reading the locations of tokens detected in Phase 1 and registering itself as a ROS service server.
-* providing the next goal via `give_goals_service`
+The `scheduler_server` node is initialized by reading the locations of tokens detected in Phase 1 and registering itself as a ROS service server, providing the next goal via `give_goals_service`
 
 When a service call is received, mainly from the `inspector` node acting as a ROS service client, the `inspector` node reports whether the targeted token has been found. If the token has been located, it is marked as such. The next step involves finding the shortest path to the next uncollected token. This is done via the `GimmePathLength` service connected to the `pathfinder` node. The tokens are sorted based on the distance to the turtlebot, and the token with the shortest distance is selected as the next goal. The response of the service includes the name and position of the selected token in the map.
 
-The communication between the service server and client is accomplished by using the customm implemented messages
+The communication between the service server and client is accomplished by using the custom implemented service messages
 * `GimmeGoal` containing the `id_found`; `GimmeGoalResponse` containing the `id`, `x` and `y` coordinates
 * `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` message as response
 * `GimmePathLength` containing the token's `id`, `x` and `y` coordinates with a `path_length` (represented by a `float`) as response
+
+####### `scheduler_service` as communcation hub for other TurtleBots
+
+The `scheduler_service` has the potential to facilitate communication between TurtleBots for joint search and path planning within a labyrinth. This could involve broadcasting the current target token and any previously found tokens to a specified topic, allowing other TurtleBots to subscribe and keep track of each other's progress. Although the necessary code structures are in place, this functionality has not yet been implemented and remains a future possibility.
 
 ###### Usage
 
@@ -509,35 +514,31 @@ $ roslaunch token_inspector scheduler.launch
 
 ###### Purpose
 
-The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
+The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package (*deprecated*) and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
 
 ###### Functional Principle
 
 The `pathfinder` node acts as to ROS service servers
-* providing path planning as `provide_path_service`
+* providing path planning as `provide_path_service` (*deprecated*)
 * providing path length calculation as `provide_path_length_service`
 
-For more details, refer to the individual sections below.
+For detailed information regarding actual path planningn, please refer to the individual runner implementation descriptions available in chapter [*`inspector` package - Functional Principle*](#functional-principle-2). For further details regarding the path length planning, refer to the section below.
 
 <details>
-<summary>Deprecated: Path Planning</summary>
+<summary>Path Length Calculation</summary>
 
-Originally, it was planned to get the path in this way, but instead, the `SimpleActionClient` by `move_base` was used.
-
- To calculate the path, the node uses the `/move_base/make_plan` service provided by the [`move_base` package](https://wiki.ros.org/move_base). The path is calculated by getting the TurtleBot's current position using the custom `PoseTF` message (refer to [*`current_pos` package*](#current_pos-package) for more details) which is converted to a `Pose` message provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs). Finally, the path planning is handed over to the mentioned `make_plan` service, using both the TurtleBot's current location and the target token's coordinates as input.
-
-To enhance the pathfinding process, the TurtleBot only considers every tenth point in the generated path as its target destination. This optimization reduces the number of path calculations and speeds up the time it takes to reach the desired token.
+The length of the path is calculated using the TurtleBot's current position, which is based on the custom `PoseTF` message (see [*`current_pos` package*](#current_pos-package) for more details), as well as the saved coordinates of the targeted token. The euclidean distance is utilized as the method of measuring the distance between the two points, using both coordinate's `x` and `y` values.
 
 </details>
 
 <details>
-<summary>Path Length Calculation</summary>
-The path length calculation was done via the euler distance from the start to the endpoint. It receives a `GimmePathLength` request and answers with a simple distance.
+<summary><i>Deprecated:</i> Path Planning</summary>
 
-The below part was planned, but could not be used.
-The path length calculation logically depends on the path planning logic described in the section above. It receives a `GimmePathLength` request and calculates the length of of a path by iterating through each `PoseStamped` in the path, calculating the euclidean distance between consecutive poses and summing up the distances.
+The original intention was to use the `/move_base/make_plan` service which was later on replaced by the custom behavior implemented in the `MoveBaseRunner` class, utilizing the `SimpleActionClient` implementation (pleaser refer to [*`inspector` package - Functional Principle*](#functional-principle-2) for more details).
 
-The `PoseStamped` used is provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs) containing a reference coordinate frame and a timestamp.[^pose-stamped]
+To calculate the path, the node uses the `/move_base/make_plan` service provided by the [`move_base` package](https://wiki.ros.org/move_base). The path is calculated by letting the TurtleBot's current position using the custom `PoseTF` message (refer to [*`current_pos` package*](#current_pos-package) for more details) which is converted to a `Pose` message provided by the [`geometry_msgs` package](https://wiki.ros.org/geometry_msgs). Finally, the path planning is handed over to the mentioned `make_plan` service, using both the TurtleBot's current location and the target token's coordinates as input.
+
+To enhance the pathfinding process, the TurtleBot only considers every tenth point in the generated path as its target destination. This optimization reduces the number of path calculations and speeds up the time it takes to reach the desired token.
 
 </details>
 
