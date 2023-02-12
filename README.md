@@ -340,7 +340,7 @@ $ roslaunch current_pos launch_transformer.launch
 
 #### `token_inspector` package
 
-The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive to towards the closest token, regardless of where the TurtleBot is placed.
+The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive towards the closest token, regardless of where the TurtleBot is placed.
 
 The `token_inspector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth:
 
@@ -354,7 +354,7 @@ The `inspector` node has two main functionalities:
 
 ###### Functional Principle
 
-As a first step, the `inspector` node creates an instance of the `WallLocalizer` class wich uses `Advanced Monte Carlo Localization` to localize the TurtleBot within the labyrinth before being able to start requesting new target tokens to plan the path for and to drive to. For more details, refer to the *Localization using `AMCL`* block below.
+As a first step, the `inspector` node creates an instance of the `WallLocalizer` class wich uses the `Advanced Monte Carlo Localization` to localize the TurtleBot within the labyrinth before being able to start requesting new target tokens to plan the path for and to drive to. For more details, refer to the *Localization using `AMCL`* block below.
 
 <details>
 <summary>Localization using <code>AMCL</code></summary>
@@ -366,13 +366,13 @@ As a first step, the `inspector` node creates an instance of the `WallLocalizer`
 **Functional Principle**
 
 The `WallLocalizer` class heavily relies on logic that can also be found in the `WallFollower` and `FindWall` behaviors mentioned in [*`token_detector` - Functional Principle*](#functional-principle) to navigate through the labyrinth while the AMCL algorithm provided by the [`amcl` package](https://wiki.ros.org/amcl) tries to localize the TurtleBot within the given map from Phase 1.  
-To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`. These two measurments have been introduced to improve the accuracy of the AMCL algorithm as shorter or too long execution times might result in wrong localization results.
+To make sure that the TurtleBot has navigated through the labyrinth for a sufficient amount of time, a minimum execution time of `3 seconds` needs to be surpassed. Additionally, the uncertanity of the provided localization result has to be below a threshold of `0.007`. These two measurements have been introduced to improve the accuracy of the AMCL algorithm as shorter or too long execution times might result in wrong localization results.
 
-In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, such as the footprint of the TurtleBot itself. The defining of separate parameters for both the local and global costmaps was crucial in achieving proper localization and was a significant contributing factor.
+In addition to the logic, the `amcl_package` also relies on a set of parameter files (located in the `param` folder of the package), which define important parameters for the costmap, such as the footprint of the TurtleBot itself. The definition of separate parameters for both the local and global costmaps was crucial in achieving proper localization and was a significant contributing factor.
 
 AMCL uses a combination of an existing map and sensor data (in this case data from the LiDAR sensor) to generate repeated estimates, or "particles", of a robot's position. The algorithm processes the continuous stream of sensor data it receives to determine which particles match the observed surroundings and which can be ignored. New particles are generated that are closer to the actual position while moving, which eventually lead to a more or less certain position of the robot within the existing map. [^amcl]
 
-AMCL's covariance matrix describes the uncertainty across 6 dimensions. We are only interested in the diagonal values as the values do not correlate at all. `z`, `roll` and `pitch` can not occur in our robot world, so this leaves only `x`, `y` and `yaw` (rotation around the `z` axis). The robot follows the wall until it is certain of the accuracy of all three values (meaning the value is below threshold).
+AMCL's covariance matrix describes the uncertainty across 6 dimensions. We are only interested in the diagonal values as the values do not correlate at all. `z`, `roll` and `pitch` can not occur in our robot's world, leaving only `x`, `y` and `yaw` (rotation around the `z` axis). The robot follows the wall until it is certain of the accuracy of all three values (meaning the value is below threshold).
 
 ```python
 [
@@ -414,7 +414,7 @@ For a detailed overview of the functionality of the two runners, please refer to
 
 *During development, a `CustomRunner` was attempted to get implemented with all custom logic. Compared to the `MoveBaseRunner` and `WallFollowerRunner`, the results were not satisfactory which is the reason why the usage was not included.*
 
-Due to limited time, obstacle avoidance involving the avoidance of other TurtleBots navigating through the same labyrinth concurrently has not been implemented. Ideally, this could have been achieved through a similar approach to token detection. For instance, by attaching a distinctive colored token-like object to each TurtleBot and using the RaspberryPi camera to detect the color, the planned path could be adjusted to avoid other TurtleBots.
+Due to limited time, obstacle avoidance involving the avoidance of other TurtleBots navigating through the same labyrinth concurrently has not been implemented. One of the major challenges is that the LiDAR is not able to the detect the other TurtleBots due to them having to low of a profile. Nevertheless, a detection could have been achieved through a similar approach to token detection. For instance, by attaching a distinctive colored token-like object to each TurtleBot and using the RaspberryPi camera to detect the color, the planned path could be adjusted to avoid other TurtleBots.
 
 <details>
 <summary><code>MoveBaseRunner</code> runner description</summary>
@@ -440,7 +440,7 @@ Should the internal failure count fail for more than 10 (consecutive) times, the
 <details>
 <summary><code>WallFollowerRunner</code> runner description</summary>
 
-The `WallFollowerRunner` is somewhat comparable to the `FollowWall` and `FindWAll` behaviors implemented in the [*`token_detector` package*](#token_detector-package), sharing some similarities in the logic. Compared to the behavior, the runner's implementation allows for receiving a token as the target which is used to position the TurtleBot within the labyrinth.
+The `WallFollowerRunner` is somewhat comparable to the `FollowWall` and `FindWall` behaviors implemented in the [*`token_detector` package*](#token_detector-package), sharing some similarities in the logic. Compared to the behavior, the runner's implementation allows for receiving a token as the target which is used to position the TurtleBot within the labyrinth.
 
 Internally, the runner makes use of four different behaviors (order decending by priorityy):
 * `TurnTowardsGoal`
@@ -448,9 +448,9 @@ Internally, the runner makes use of four different behaviors (order decending by
 * `FollowWall`
 * `TowardsGoal`
 
-As a first step, the runner uses the token's `x` and `y` coordinates and the TurtleBot's position (using the custom `PoseTF`'s `x`, `y` and `angle` properties (refer to [`current_pos` package](#current_pos-package) for more details)) to align itself in a straight line towards the token. The alignment is done by calculating a direction vector between the TurtleBot and the token and calculating the angle difference between the two points.
+As a first step, the runner uses the token's `x` and `y` coordinates and the TurtleBot's position (using the custom `PoseTF`'s `x`, `y` and `angle` properties (look into the [`current_pos` package](#current_pos-package) for more details)) to align itself in a straight line towards the token. The alignment is done by calculating a direction vector between the TurtleBot and the token and calculating the angle difference between the two points.
 
-Both the `TurnTowardsWall` and `FollowWall` behaviors are designed to keep the TurtleBot as close to the wall as possible, taking into account that any sharp edges or corners may drive the robot further away for which counter-steering is applied, while navigating through the labyrinth and reaching the targeted tokens.    
+Both the `TurnTowardsWall` and `FollowWall` behaviors are designed to keep the TurtleBot as close to the wall as possible, taking into account that any sharp edges or corners may drive the robot further away, for which counter-steering is applied, while navigating through the labyrinth and reaching the targeted tokens.    
 The `TowardsGoal` behavior is a very simple implementation that steers the TurtleBot towards the token.
 
 All the behaviors rely on the `/cmd_vel` topic to publish any movement commands calculated while navigating through the labyrinth.
@@ -490,9 +490,9 @@ The communication between the service server and client is accomplished by using
 * `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` message as response
 * `GimmePathLength` containing the token's `id`, `x` and `y` coordinates with a `path_length` (represented by a `float`) as response
 
-####### `scheduler_service` as communcation hub for other TurtleBots
+####### `scheduler_server` as communcation hub for other TurtleBots
 
-The `scheduler_service` has the potential to facilitate communication between TurtleBots for joint search and path planning within a labyrinth. This could involve broadcasting the current target token and any previously found tokens to a specified topic, allowing other TurtleBots to subscribe and keep track of each other's progress. Although the necessary code structures are in place, this functionality has not yet been implemented and remains a future possibility.
+The `scheduler_server` has the potential to facilitate communication between TurtleBots for joint search and path planning within a labyrinth. This could involve broadcasting the current target token and any previously found tokens to a specified topic, allowing other TurtleBots to subscribe and keep track of each other's progress. Although the necessary code structures are in place, this functionality has not yet been implemented and remains a future possibility.
 
 ###### Usage
 
@@ -514,15 +514,16 @@ $ roslaunch token_inspector scheduler.launch
 
 ###### Purpose
 
-The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server` and `inspector` nodes respectively. The node uses the path planning algorithm provided by the `move_base` package (*deprecated*) and calculates the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes.
+The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server`. The node should have initially used the the path planning service provided by the `move_base` package (*deprecated*) and calculate the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes. Because of a different implementation für driving towards a goal, where `move_base` is already used, it was not possible to use the `/move_base/get_plan` service. The solution was to move to a more simple implementation using the euklidean distance. 
+Additionally, the planning for the path itself was not necessary, as the MoveBaseRunner does not need it. Still, the implementation would be there, if changes in the architecture would need them.
 
 ###### Functional Principle
 
-The `pathfinder` node acts as to ROS service servers
+The `pathfinder` node acts as to ROS service servers for
 * providing path planning as `provide_path_service` (*deprecated*)
 * providing path length calculation as `provide_path_length_service`
 
-For detailed information regarding actual path planningn, please refer to the individual runner implementation descriptions available in chapter [*`inspector` package - Functional Principle*](#functional-principle-2). For further details regarding the path length planning, refer to the section below.
+For detailed information regarding actual path planning, look into the individual runner implementation descriptions available in chapter [*`inspector` package - Functional Principle*](#functional-principle-2). For further details regarding the path length planning, refer to the section below.
 
 <details>
 <summary>Path Length Calculation</summary>
