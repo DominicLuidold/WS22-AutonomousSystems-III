@@ -569,6 +569,55 @@ For customizing the camera configuration, the following two files are necessary 
 * `~/catkin_ws/src/raspicam_node/launch/camerav2_custom.launch`
 * `~/catkin_ws/src/raspicam_node/camera_info/camerav2_custom.yaml`
 
+## The proposed ideas for communicating with other TurtleBots
+
+This subsection was coordinated with the other teams and will be similar.
+
+### Solution 1: Communicating found tags
+
+The simplest solution that we have considered is that each robot sends only the information about the tag that it has just found. In this scenario, each robot can react to the information of the other robots and cancel its approach if another robot is already working on the same tag. 
+
+#### Advantages
+
+* Ease of implementation: this method is simple to implement and does not require complex communication architecture or protocols. 
+* Avoidance of overlap: Since each robot abandons the same tag once another robot has already found it, overlaps are avoided. 
+
+#### Disadvantages: 
+
+* Insufficient coordination: since there is no central control, there may be insufficient coordination between robots, which can lead to inefficiencies. 
+* No prioritized processing: since there is no ranking for processing tags, there may be an uneven distribution of work if some tags are more difficult to process than others. 
+* No monitoring: Since there is no central monitoring, it can be difficult to track the progress of the robots and ensure that all tags are processed.
+
+### Solution 2: Communicating next and found tags
+
+The second option represents an extended variant of the first solution, sharing not only information about the tags found, but also about the tags currently being approached.  
+
+#### Advantages: 
+
+* Better coordination: since information about approached tags is shared, there can be better coordination between robots, leading to higher efficiency. 
+* Prioritized processing: as robots share information about the tags they have approached, an order of priority for processing can be established to ensure that the more difficult tags are prioritized. 
+* Monitoring: Since information about the tags approached is shared, it is easier to track the robots' progress and ensure that all tags are processed. 
+
+#### Disadvantages: 
+
+* More complex to implement: this method is more complex to implement and requires more complex communication architecture and protocols. 
+* Increased communication requirements: as more information needs to be shared, there may be an increased need for communication, which can lead to higher latency or increased susceptibility to errors.
+
+### Solution 3: Constant Monitoring
+
+The third possibility, which the teams have elicited, is a bit more complex because in this possibility a main logic first queries the position of the robots on the map and then creates the plan for the robots to then pass the order and the plan to the tags to the robots, which then approach them and inform the main logic cyclically about the position and the tags found, so that the main logic can react to possible errors or also optimize the paths again if necessary. 
+
+#### Advantages: 
+
+* Optimized path: By monitoring the robot position and the found tags, the Main Logic can optimize the path, resulting in higher efficiency. 
+* Error correction: by monitoring the robot position and the found tags cyclically, the Main Logic can react to errors and correct them. 
+
+#### Disadvantages: 
+
+* Higher complexity: this method is more complex to implement and requires a Main Logic, more complex communication architecture and protocols. 
+* High resource requirements: the Main Logic requires a lot of resources because it has to constantly monitor and, if necessary, correct the robot position and the tags found. 
+* Latency: Due to the cyclic monitoring of the robot position and the found tags, a higher latency can occur.
+
 ## Troubleshooting
 
 The TurtleBot is comprised of various hardware and software components, which can experience issues due to external factors, incorrect installation, improper execution sequence, or other causes. Some problems can easily be fixed, while others may require more attention and a technical understanding.
