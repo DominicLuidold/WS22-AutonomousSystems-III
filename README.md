@@ -15,6 +15,10 @@
         1. [`token_inspector` package](#token_inspector-package)
     1. [Adapted Modules](#adapted-modules)
         1. [Raspberry Pi camera configuration](#raspberry-pi-camera-configuration)
+    1. [The proposed ideas for communicating with other TurtleBots](#the-proposed-ideas-for-communicating-with-other-turtlebots)
+        1. [Solution 1: Communicating found tags](#solution-1-communicating-found-tags)
+        1. [Solution 2: Communicating next and found tags](#solution-2-communicating-next-and-found-tags)
+        1. [Solution 3: Constant monitoring](#solution-3-constant-monitoring)
 1. [Troubleshooting](#troubleshooting)
 1. [*Internal* development documentation](#internal-development-documentation)
 
@@ -603,7 +607,7 @@ The second option represents an extended variant of the first solution, sharing 
 * More complex to implement: this method is more complex to implement and requires more complex communication architecture and protocols. 
 * Increased communication requirements: as more information needs to be shared, there may be an increased need for communication, which can lead to higher latency or increased susceptibility to errors.
 
-### Solution 3: Constant Monitoring
+### Solution 3: Constant monitoring
 
 The third possibility, which the teams have elicited, is a bit more complex because in this possibility a main logic first queries the position of the robots on the map and then creates the plan for the robots to then pass the order and the plan to the tags to the robots, which then approach them and inform the main logic cyclically about the position and the tags found, so that the main logic can react to possible errors or also optimize the paths again if necessary. 
 
