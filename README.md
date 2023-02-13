@@ -2,7 +2,7 @@
 
 <img src="documentation/TurtleBot3_SteFloDom.jpg" alt="Image of the `SteFloDom` TurtleBot 3" style="height: 500px" />
 
-# Table of Contents
+## Table of Contents
 
 1. [Getting Started](#getting-started)
     1. [Preparing the TurtleBot hardware](#preparing-the-turtlebot-hardware)
@@ -22,11 +22,11 @@
 1. [Troubleshooting](#troubleshooting)
 1. [*Internal* development documentation](#internal-development-documentation)
 
-# Getting Started
+## Getting Started
 
 This section will describe how to start, operate and use the TurtleBot project with step-by-step instructions.
 
-## Preparing the TurtleBot hardware
+### Preparing the TurtleBot hardware
 
 To be able to run and start the TurtleBot, make sure the following components are either ready to use or nearby:
 * TurtleBot 3 identified by red tape with `SteFloDom` written on it
@@ -46,13 +46,13 @@ If all of the required components are ready, proceed with the following steps:
 
 Once the Raspberry Pi modules start to light up, the rest of the TurtleBot (including the LiDAR sensor and the PixyCam) will start to boot up by either blinking or moving. Once the bootup has been completed (approximately 10-30 seconds), proceed with preparing the TurtleBot software.
 
-## Preparing the TurtleBot software
+### Preparing the TurtleBot software
 
-### First time setup
+#### First time setup
 
 Should the TurtleBot get set up for the first time in a new network, proceed with the following steps. Otherwise skip and continue with the [General Setup](#general-setup).
 
-#### Remote Computer
+##### Remote Computer
 *The setup guide assumes that the operating system used is either a Linux distribution or that a Linux VM running on Windows is used, you either use the commands in the linux terminal or connect to the system via ssh.*
 
 1. Determine the IP address of the computer
@@ -83,12 +83,12 @@ Should the TurtleBot get set up for the first time in a new network, proceed wit
 Please also see the following image taken from [`TurtleBot 3 Quick Start Guide (Noetic) - 3.1.5 Network Configuration`](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start):
 [![TurtleBot 3 Quick Start Guide - 3.1.5 Network Configuration](https://emanual.robotis.com/assets/images/platform/turtlebot3/software/network_configuration.png)](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start)
 
-### General Setup
+#### General Setup
 
-#### Raspicam
+##### Raspicam
 To be able to utilize the image stream provided by the raspicam it needs to be set up on the turtlebot first. Refer to [this tutorial](#raspicam-setup).
 
-#### PixyCam
+##### PixyCam
 
 After the PixyCam has been set up for use via usb (see [tutorial](#pixy-cmucam5-setup)) it needs to be trained.
 To be able to detect any tokens using the Pixy CMUcam5, the camera has to be trained every time before being able to start running the built-in software. To do so, proceed with the following steps:
@@ -103,7 +103,7 @@ To be able to detect any tokens using the Pixy CMUcam5, the camera has to be tra
 
  ***Note:*** See the [Pixy Documentation](https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2) for more information. Also, the lens sharpness can be adjusted by turning the camera housing, but too much or too little adjustment may affect image quality. Use the PixyMon tool for the initial calibration!
 
-#### Software
+##### Software
 
 To be able to run the software built into the TurtleBot, proceed with the following steps:
 1. On the remote computer, run
@@ -127,7 +127,7 @@ To be able to run the software built into the TurtleBot, proceed with the follow
 
 Once all steps have been executed, the general setup is completed and the TurtleBot is ready.
 
-## Using the TurtleBot
+### Using the TurtleBot
 
 To start using the TurtleBot, proceed with the following steps:
 1. Create a labyrinth
@@ -135,7 +135,7 @@ To start using the TurtleBot, proceed with the following steps:
 2. Follow the steps described in the [*General Setup*](#general-setup) chapter.
 3. Have the remote computer with the compiled source code and packages ready.
 
-### Phase 1 - Map labyrinth and detect tokens
+#### Phase 1 - Map labyrinth and detect tokens
 
 1. On the remote computer, run (in a new terminal)
     ```console
@@ -157,7 +157,7 @@ The TurtleBot will then start following the left-hand side wall of the labyrinth
 
 ***Note:*** Once all tokens have been detected, the TurtleBot will automatically stop. When the TurtleBot has fully stopped for 10-20 seconds, stop the script by entering `CMD+C`.
 
-### Phase 2 - Localize robot, plan paths & drive to tokens
+#### Phase 2 - Localize robot, plan paths & drive to tokens
 
 1. On the remote computer, run (in a new terminal):
     ```console
@@ -192,7 +192,7 @@ When the TurtleBot has finished, the turtlebot will stop and the following messa
 Finished
 ```
 
-# Architecture
+## Architecture
 
 The task is divided into two phases, reflecting the structure of our solution which consists of two main parts, both of which require user input to initiate and complete. The two parts work together to allow the TurtleBot to navigate through any given labyrinth (that meets the minimum requirements mentioned in [*Using the TurtleBot*](#using-the-turtlebot)), detect tokens, and ultimately plan a path through the labyrinth to reach each token.
 
@@ -202,21 +202,21 @@ Once the map is generated, Phase 1 continues with the TurtleBot driving through 
 Phase 2 of the process involves the use of the `token_inspector` package. Its primary goal is to locate the TurtleBot within the labyrinth and plan a path to collect each token in turn. In the first step, the TurtleBot uses the `Advanced Monte Carlo Localisation` algorithm (see [*`inspector_node` - AMCL*](#inspector-node) for more details) to determine its location within the labyrinth. This allows it to start from any point within the labyrinth, effectively solving the kidnapped robot problem.  
 Once the TurtleBot has located itself, it uses a goal scheduling algorithm based on the ROS service server-client architecture to obtain new token goals. This algorithm relies on a main runner and a backup runner (see [*`inspector_node`*](#inspector-node) for more details), which provide different strategies for reaching each token with a planned path based on the shortest distances between them. Finally, the TurtleBot runs through the labyrinth until it has collected all the tokens.
 
-## Custom Modules
+### Custom Modules
 
-### `token_detector` package
+#### `token_detector` package
 
 The `token_detector` package integrates all the necessary components to map the world using slam and perform detection and localization of tokens, specifically paper or post-it notes with a unique red color, within a labyrinth. The package includes the logic for navigating the labyrinth, to identify the tokens and saving their positions within the map in JSON format. Additionally, the map is saved in a ROS standard `.yaml` and `.pgm` format.
 
 The `token_detector` package is organized into two nodes and various behaviors, each designed to carry out specific tasks within the labyrinth, either in an autonomous manner or to aid in the development of its associated functionalities:
 
-#### `image_viewer` node
+##### `image_viewer` node
 
-##### Purpose
+###### Purpose
 
 The `image_viewer` node is a development tool subscribing to the `/raspicam_node/image/compressed` and `/camera/rgb/image_raw` (for simulating in Gazebo) topics, converting them to the OpenCV format and subsequently displaying them in a window.
 
-##### Usage
+###### Usage
 
 The `image_viewer` node can be launched with running the following command on the TurtleBot:
 
@@ -224,13 +224,13 @@ The `image_viewer` node can be launched with running the following command on th
 $ roslaunch token_detector image_viewer.launch
 ```
 
-#### `token_detector` node
+##### `token_detector` node
 
-##### Purpose
+###### Purpose
 
 The `token_detector` node serves two main purposes: mapping the labyrinth in which the TurtleBot is placed, and detecting and saving the positions of tokens within the labyrinth. During the initial mapping phase, the labyrinth is explored using a left-wall following approach. The TurtleBot moves along the walls on its left until the entire labyrinth has been mapped. In the second phase, the TurtleBot traverses the labyrinth once again, detecting and recording the positions of any tokens encountered during its journey. These positions are stored in a locally saved JSON file for reusability (for a more detailed explanation, refer to *`CaptureToken` behavior description*).
 
-##### Functional Principle
+###### Functional Principle
 
 The `token_detector` node implements a reactive and behavior-based architecture, utilizing a subsumption architecture made up of multiple independent behaviors. This design enables the robot to efficiently explore its surroundings and gather tokens. The main node continuously determines which behavior is appropriate to execute based on the sensor data at any given time.
 
@@ -311,7 +311,7 @@ The `FindWall` behavior has the lowest priority among the five available behavio
 
 The main node contains the logic for creating an initial map of the labyrinth based on the two `WallFollower` and `FindWall` behaviors without paying attention to any existing tokens. Once the labyrinth has been fully mapped, the TurtleBot's set of behaviors is adjusted to include the remaining three behaviors which focus on finding and recording the positions of the tokens. Once all tokens (specified by the `num_tokens` parameter) have been discovered, the `token_detector`  tells the TurtleBot to stop. Then the turtlebot awaits user interaction.
 
-##### Usage
+###### Usage
 
 The `token_detector` node can be launched with running the following command on the remote computer:
 
@@ -319,7 +319,7 @@ The `token_detector` node can be launched with running the following command on 
 $ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens> skip_roundtrip:=<true|false> debug:=<true|false> 
 ```
 
-##### Arguments
+###### Arguments
 
 | Argument         | Default | Format | Required | Description                                                 |
 |------------------|---------|--------|----------|-------------------------------------------------------------|
@@ -328,13 +328,13 @@ $ roslaunch token_detector token_detector.launch num_tokens:=<number-of-tokens> 
 | `debug`          | `false` | `bool` | No       | Show debug messages in console output |
 
 
-### `current_pos` package
+#### `current_pos` package
 
-#### Purpose
+##### Purpose
 
 The `current_pos` package contains the necessary files and logic for converting the TurtleBot's position, as determined from odometry data, to a coordinate representation within the map's coordinate system.
 
-#### Functional Principle
+##### Functional Principle
 
 The node subscribes to the `/odom` topic, which provides the current pose of the robot. Subsequently, the node's logic is triggered every time a new pose is received on the topic and converts it to the map frame using functionality provided by the [ROS `tf` package](https://wiki.ros.org/tf)[^tf-package].
 
@@ -343,7 +343,7 @@ The converted pose is packaged into a custom `PoseInMap` message, which includes
 
 Both the `PoseInMap` and `PoseTF` messages are used in other custom packages related to the TurtleBot's functionality.
 
-#### Usage
+##### Usage
 
 The `robot2map_conversion` node can be launched with running the following command on the remote computer:
 
@@ -351,27 +351,27 @@ The `robot2map_conversion` node can be launched with running the following comma
 $ roslaunch current_pos launch_transformer.launch
 ```
 
-#### Arguments
+##### Arguments
 
 | Argument     | Default | Format   | Required | Description                                                          |
 |--------------|---------|----------|----------|----------------------------------------------------------------------|
 | `debug`      | `true`  | `bool`   | No       | Show debug messages                                                  |
 
-### `token_inspector` package
+#### `token_inspector` package
 
 The `token_inspector` package integrates all the necessary components to utilize the generated map and token locations from Phase 1 (see [*Architecture*](#architecture)). The package includes the logic for localizing the TurtleBot autonomously inside the labyrinth and planning a path within the labyrinth to drive towards the closest token, regardless of where the TurtleBot is placed.
 
 The `token_inspector` package is organized into various nodes, each designed to carry out specific tasks within the labyrinth:
 
-#### `inspector` node
+##### `inspector` node
 
-##### Purpose
+###### Purpose
 
 The `inspector` node has two main functionalities:
 * localizing the TurtleBot within the labyrinth using advanced Monte Carlo localization
 * requesting new targets from the [`scheduler_server` node](#scheduler_server-node), triggering runners
 
-##### Functional Principle
+###### Functional Principle
 
 As a first step, the `inspector` node creates an instance of the `WallLocalizer` class wich uses the `Advanced Monte Carlo Localization` to localize the TurtleBot within the labyrinth before being able to start requesting new target tokens to plan the path for and to drive to. For more details, refer to the *Localization using `AMCL`* block below.
 
@@ -478,7 +478,7 @@ All the behaviors rely on the `/cmd_vel` topic to publish any movement commands 
 
 </details>
 
-##### Usage
+###### Usage
 
 The `inspector` node can be launched with running the following command on the remote computer:
 
@@ -486,21 +486,21 @@ The `inspector` node can be launched with running the following command on the r
 $ roslaunch token_inspector token_inspector.launch
 ```
 
-##### Arguments
+###### Arguments
 
 | Argument         | Default | Format | Required | Description         |
 |------------------|---------|--------|----------|---------------------|
 | `debug`          | `false` | `bool` | No       | Show debug messages |
 
-#### `scheduler_server` node
+##### `scheduler_server` node
 
-##### Purpose
+###### Purpose
 
 The `scheduler_server` node serves as the primary point of communication for the inspector node. It provides new token targets in the form of custom `GimmeGoal` services and uses the token positions determined in Phase 1 (see [*Architecture*](#architecture)). The node then supplies these positions upon request and marks the tokens that have been found.
 
 Although the `scheduler_server` is designed to handle communication with external TurtleBots from other teams, this functionality was not implemented due to time and WiFi bandwidth constraints. However, a general plan on how the communcation might have worked was planned and is described further below.
 
-##### Functional Principle
+###### Functional Principle
 
 The `scheduler_server` node is initialized by reading the locations of tokens detected in Phase 1 and registering itself as a ROS service server, providing the next goal via `give_goals_service`
 
@@ -511,11 +511,11 @@ The communication between the service server and client is accomplished by using
 * `GimmePath` containing the token's `id`, `x` and `y` coordinates with a `nav_msgs/Path` message as response
 * `GimmePathLength` containing the token's `id`, `x` and `y` coordinates with a `path_length` (represented by a `float`) as response
 
-##### scheduler_server as communcation hub for other TurtleBots
+###### scheduler_server as communcation hub for other TurtleBots
 
 The `scheduler_server` has the potential to facilitate communication between TurtleBots for joint search and path planning within a labyrinth. This could involve broadcasting the current target token and any previously found tokens to a specified topic, allowing other TurtleBots to subscribe and keep track of each other's progress. Although the necessary code structures are in place, this functionality has not yet been implemented and remains a future possibility.
 
-##### Usage
+###### Usage
 
 The `scheduler_server` node can be launched with running the following command on the remote computer:
 
@@ -531,14 +531,14 @@ $ roslaunch token_inspector scheduler.launch
 |--------------|-------------------------------------|----------|----------|----------------------|
 | `token_file` | `/killerrobot/token_positions.json` | `string` | No       | Location of map file |
 
-#### `pathfinder` node
+##### `pathfinder` node
 
-##### Purpose
+###### Purpose
 
 The `pathfinder` node provides both path planning and path length information for the planned paths. The `pathfinder` node uses custom `GimmePath` and `GimmePathLength` service messages to communicate with the `scheduler_server`. The node should have initially used the the path planning service provided by the `move_base` package (*deprecated*) and calculate the total length of the planned path, which can be used for further analysis and decision making by the `scheduler_server` and `inspector` nodes. Because of a different implementation für driving towards a goal, where `move_base` is already used, it was not possible to use the `/move_base/get_plan` service. The solution was to move to a more simple implementation using the euklidean distance. 
 Additionally, the planning for the path itself was not necessary, as the MoveBaseRunner does not need it. Still, the implementation would be there, if changes in the architecture would need them.
 
-##### Functional Principle
+###### Functional Principle
 
 The `pathfinder` node acts as to ROS service servers for
 * providing path planning as `provide_path_service` (*deprecated*)
@@ -564,7 +564,7 @@ To enhance the pathfinding process, the TurtleBot only considers every tenth poi
 
 </details>
 
-##### Usage
+###### Usage
 
 The `pathfinder` node can be launched with running the following command on the remote computer:
 
@@ -572,9 +572,9 @@ The `pathfinder` node can be launched with running the following command on the 
 $ roslaunch token_inspector find_path.launch
 ```
 
-## Adapted Modules
+### Adapted Modules
 
-### Raspberry Pi camera configuration
+#### Raspberry Pi camera configuration
 
 To enhance the performance of the Raspberry Pi camera when detecting tokens and to avoid overheating, delays, and other limitations, the following configuration modifications were made:
 * reduced the resolution from `1280x960` (initially planned resolution) to `410x308` pixels
@@ -639,13 +639,13 @@ The third possibility, which the teams have elicited, is a bit more complex beca
 * High resource requirements: the Main Logic requires a lot of resources because it has to constantly monitor and, if necessary, correct the robot position and the tags found. 
 * Latency: Due to the cyclic monitoring of the robot position and the found tags, a higher latency can occur.
 
-# Troubleshooting
+## Troubleshooting
 
 The TurtleBot is comprised of various hardware and software components, which can experience issues due to external factors, incorrect installation, improper execution sequence, or other causes. Some problems can easily be fixed, while others may require more attention and a technical understanding.
 
 The following list includes frequently encountered problems and respective solutions for hardware and software components in the TurtleBot.
 
-## The TurtleBot navigates insecurley within the labyrinth and/or crashes into walls
+### The TurtleBot navigates insecurley within the labyrinth and/or crashes into walls
 
 In some cases, the TurtleBot may struggle with navigation in the labyrinth, missing walls or even crashing into them, and not detecting clearly visible tokens.
 
@@ -653,7 +653,7 @@ In some cases, the TurtleBot may struggle with navigation in the labyrinth, miss
 
 **Solution 2:** The walls of the labyrinth may cause reflections if they are illuminated directly. Consider using a reflective coating, such as white paper, to reduce reflections.
 
-## The TurtleBot is turned on but the LiDAR is not moving
+### The TurtleBot is turned on but the LiDAR is not moving
 
 In some cases, the LiDAR may not be operating even if the TurtleBot has been correctly turned on and the setup steps have been followed correctly. To resolve the issue:
 
@@ -661,13 +661,13 @@ In some cases, the LiDAR may not be operating even if the TurtleBot has been cor
 
 **Solution 2:** If the `roscore` script has crashed or lost connection to the network, connect to the remote computer, stop the script and restart it. Then, follow the steps of `Solution 1`.
 
-## The TurtleBot is turned on but the wheels are not moving
+### The TurtleBot is turned on but the wheels are not moving
 
 In some instances, the Li-Po battery may have a low charge that isn't low enough to trigger the low battery beep, but it still may not be enough to power the TurtleBot's wheels.
 
 **Solution:** To resolve this, turn off the TurtleBot by turning off the Raspberry Pi module. Wait for 10-20 seconds and then disconnect the Li-Po battery. Finally, reconnect a fully charged Li-Po battery. Refer to [General Setup](#general-setup) for further instructions.
 
-## An error message indicating out-of-sync timestamps appears
+### An error message indicating out-of-sync timestamps appears
 
 In some cases, an error message indicating out-of-sync timestamps may appear, such as:
 ```
@@ -681,13 +681,13 @@ Costmap2DROS transform timeout. Current time: 1666254261.9980, global_pose stamp
 
 **Solution:** To resolve this issue, synchronize the time on the Raspberry Pi and the remote computer with a NTP time server.
 
-## The bringup script is encountering an error
+### The bringup script is encountering an error
 
 In some instances, the `roslaunch turtlebot3_bringup turtlebot3_robot.launch` script may display the error message `Creation of publisher failed: Checksum does not match` related to `sensor_msgs/JointState`. This can result in the TurtleBot being unable to navigate using Rviz, SLAM or other methods.
 
 **Solution:** To resolve this issue, try reflashing the OpenCR firmware following [these instruction](https://emanual.robotis.com/docs/en/platform/turtlebot3/opencr_setup/#opencr-setup).
 
-## The TurtleBot is turned on, but the LiDAR is not functioning properly and/or keeps shutting down randomly.
+### The TurtleBot is turned on, but the LiDAR is not functioning properly and/or keeps shutting down randomly.
 
 In some rare cases, the LiDAR may not return any sensor data and/or shut down unexpectedly, despite attempts to resolve the issue through other solutions.
 
@@ -704,9 +704,9 @@ In some rare cases, the LiDAR may not return any sensor data and/or shut down un
 
 [^pose-stamped]: https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/PoseStamped.html
 
-# Internal development documentation
+## Internal development documentation
 
-## General ROS Configuration
+### General ROS Configuration
 
 |Purpose | File/Program | Action|
 |---|---|---|
@@ -755,7 +755,7 @@ export TURTLEBOT3_MODEL=burger
 </table>
 
 
-## IP Adresses
+### IP Adresses
 
 Gerät | IP Adresse |
 |---|---
@@ -764,7 +764,7 @@ VM Stefan | 192.168.0.55
 VM Dominik | 192.168.0.54
 Florian | 192.168.0.52
 
-## Commands
+### Commands
 
 <table>
 <tr>
@@ -967,12 +967,12 @@ TURTLEBOT3_MODEL=waffle roslaunch token_detector labyrinth_small.launch
 
 </table>
 
-## Probleme
-### catkin_make scheitert nach Installation der Raspicam packages
+### Probleme
+#### catkin_make scheitert nach Installation der Raspicam packages
 --> Dependencies fehlen. Die dependencies wurden manuell installiert.   
 install: libraspberrypi-dev, libraspberrypi-bin, libraspberrypi0
 
-### Raspicam Software lässt sich nicht installieren
+#### Raspicam Software lässt sich nicht installieren
 Durch die Ubuntuinstallation ist die raspi-config und raspistill nicht verfügbar.  
 --> Lösung:
 1. raspi-config: Run des sh-scripts (https://github.com/EmilGus/install_raspi-config/blob/master/install.sh)   
@@ -985,18 +985,18 @@ Durch die Ubuntuinstallation ist die raspi-config und raspistill nicht verfügba
 5. sudo raspi-config -> Interfacing Options -> Camera -> Enable  
 6. Reboot 
 
-## Tutorials
-### Turtlebot Quick-Start
+### Tutorials
+#### Turtlebot Quick-Start
 https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/#pc-setup
 
-### Raspicam Setup
+#### Raspicam Setup
 - https://emanual.robotis.com/docs/en/platform/turtlebot3/appendix_raspi_cam/
 - Enablen der Kamera mit mount: https://chuckmails.medium.com/enable-pi-camera-with-raspberry-pi4-ubuntu-20-10-327208312f6e
 - Eintrag von start_x: https://github.com/maxnet/berryboot/issues/82
 - Furthermore: https://wiki.freebsd.org/arm/Raspberry%20Pi%20Camera?highlight=%28camera%29 leads to https://launchpad.net/ubuntu/+source/raspberrypi-userland
 - install of raspi-config: https://dexterexplains.com/r/20211030-how-to-install-raspi-config-on-ubuntu
 
-### Pixy CMUcam5 Setup
+#### Pixy CMUcam5 Setup
 1. Install libpixyusb:
 https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:building_the_libpixyusb_example_on_linux 
 2. Install pixymon locally on ubuntu (not turtlebot): https://docs.pixycam.com/wiki/doku.php?id=wiki:v2:installing_pixymon_on_linux   
@@ -1020,7 +1020,7 @@ Create file `/etc/udev/rules.d/pixy.rules` with content:
     ```
 5. Der PixyCam den Token beibringen: https://docs.pixycam.com/wiki/doku.php?id=wiki:v1:teach_pixy_an_object_2 
 
-### Raspicam Visualization in RViz
+#### Raspicam Visualization in RViz
 Link: https://answers.ros.org/question/391646/no-camera-topics/   
 1. Start roscore and bringup 
 2. On the Turtlebot, start the raspicam_node: 
@@ -1030,7 +1030,7 @@ Link: https://answers.ros.org/question/391646/no-camera-topics/
 3. Then start rviz with turtlebot3_slam
 4. Activate image! 
 
-### For trying the drive towards token function
+#### For trying to drive towards token function
 1. Start roscore and bringup
 
 (Steps 2-5 can be done in one go via the preconfigured launch file)
@@ -1056,7 +1056,7 @@ Run for a few seconds.
 Current actions can be seen in RVIZ (red arrow) and in the console of the turtlebot3_navigation the current steps are logged.
 Alternatively you can look at the status of the Move pase via /move_base/status topic.
 
-#### Issues:
+##### Issues:
 - Transformation of position does not yet work correctly (are in relation to the turtlebots current position as far as I know)
 - Path is not free, as turtlebot is to large
 
@@ -1066,7 +1066,7 @@ rosrun rqt_reconfigure rqt_reconfigure
 ```
 Manual is in shared OneDrive folder or accessible via http://www.zkytony.com/documents/navguide.pdf 
 
-### Solution for not driving to target:
+#### Solution for not driving to target:
 ``` 
 cd /opt/ros/noetic/share/turtlebot3_navigation/param
 sudo nano costmap_common_params_burger.yaml
